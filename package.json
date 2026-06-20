@@ -1,0 +1,10 @@
+{
+  "name": "china-consult-root",
+  "private": true,
+  "workspaces": [
+    "china_consultant"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace china_consultant"
+  }
+}

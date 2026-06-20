@@ -1,0 +1,10 @@
+# China Visa Service Consultancy
+User-agent: *
+Allow: /
+Disallow: /login
+Disallow: /register
+Disallow: /customer-dashboard
+Disallow: /employee-dashboard
+Disallow: /admin-dashboard
+
+Sitemap: https://chinavisaservice.com.np/sitemap.xml
