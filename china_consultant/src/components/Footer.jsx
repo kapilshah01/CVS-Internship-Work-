@@ -41,9 +41,14 @@ export default function Footer() {
             <span className="footer__link">✉️ {COMPANY.email}</span>
             <span className="footer__link">🕐 {COMPANY.officeHours}</span>
             <div style={{ marginTop: '1rem' }}>
-              <Link to="/login" className="btn btn--sm btn--outline" style={{ borderColor: 'var(--color-accent)' }}>
-                Client Portal →
-              </Link>
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <Link to="/employee/login" className="btn btn--sm btn--outline" style={{ borderColor: 'var(--color-accent)' }}>
+                  Employee Login
+                </Link>
+                <Link to="/admin/login" className="btn btn--sm btn--outline" style={{ borderColor: 'var(--color-accent)' }}>
+                  Admin Login
+                </Link>
+              </div>
             </div>
           </div>
         </div>

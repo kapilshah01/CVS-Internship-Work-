@@ -1,84 +1,421 @@
--- SQL Schema for China Visa Service Consultancy Pvt. Ltd. Supabase Tables
--- Paste this script into your Supabase SQL Editor (Dashboard > SQL Editor > New query)
+-- China Visa Service Consultancy
+-- Production-ready Supabase schema
+-- Run this in Supabase SQL Editor.
 
--- 1. Create users table
-CREATE TABLE IF NOT EXISTS public.users (
-    email TEXT PRIMARY KEY,
-    password TEXT NOT NULL,
-    name TEXT NOT NULL,
-    role TEXT NOT NULL CHECK (role IN ('admin', 'employee', 'customer')),
-    status TEXT NOT NULL CHECK (status IN ('active', 'pending', 'rejected')),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+create extension if not exists pgcrypto;
+
+create or replace function public.touch_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = timezone('utc', now());
+  return new;
+end;
+$$;
+
+create table if not exists public.profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  email text not null unique,
+  name text not null,
+  phone text,
+  role text not null default 'employee' check (role in ('admin', 'employee')),
+  status text not null default 'pending' check (status in ('active', 'pending', 'rejected')),
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
 );
 
--- Enable RLS for users
-ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.profiles (id, email, name, phone, role, status)
+  values (
+    new.id,
+    coalesce(new.email, ''),
+    coalesce(new.raw_user_meta_data ->> 'name', split_part(coalesce(new.email, ''), '@', 1)),
+    new.raw_user_meta_data ->> 'phone',
+    coalesce(new.raw_user_meta_data ->> 'role', 'employee'),
+    coalesce(new.raw_user_meta_data ->> 'status', 'pending')
+  )
+  on conflict (id) do update
+  set
+    email = excluded.email,
+    name = excluded.name,
+    phone = excluded.phone,
+    role = excluded.role,
+    status = excluded.status,
+    updated_at = timezone('utc', now());
 
--- Allow all authenticated users to read users table, and allow public registrations
-CREATE POLICY "Allow public read access to users" ON public.users FOR SELECT USING (true);
-CREATE POLICY "Allow public registrations" ON public.users FOR INSERT WITH CHECK (true);
-CREATE POLICY "Allow update access to admins" ON public.users FOR UPDATE USING (true);
+  return new;
+end;
+$$;
 
--- 2. Create invoices table
-CREATE TABLE IF NOT EXISTS public.invoices (
-    id TEXT PRIMARY KEY,
-    client TEXT NOT NULL,
-    passport TEXT NOT NULL,
-    country TEXT NOT NULL,
-    "visaType" TEXT NOT NULL, -- Keep camelCase to match frontend keys
-    amount NUMERIC NOT NULL,
-    status TEXT NOT NULL CHECK (status IN ('paid', 'pending', 'draft')),
-    date DATE NOT NULL,
-    email TEXT,
-    notes TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+after insert on auth.users
+for each row execute procedure public.handle_new_user();
+
+drop trigger if exists profiles_touch_updated_at on public.profiles;
+create trigger profiles_touch_updated_at
+before update on public.profiles
+for each row execute procedure public.touch_updated_at();
+
+create table if not exists public.clients (
+  id uuid primary key default gen_random_uuid(),
+  email text not null unique,
+  name text not null,
+  phone text,
+  country text,
+  source text not null default 'website',
+  status text not null default 'new' check (status in ('new', 'active', 'reviewing', 'closed')),
+  notes text,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
 );
 
--- Enable RLS for invoices
-ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
+drop trigger if exists clients_touch_updated_at on public.clients;
+create trigger clients_touch_updated_at
+before update on public.clients
+for each row execute procedure public.touch_updated_at();
 
--- Allow read/write access to all
-CREATE POLICY "Enable all actions for authenticated users" ON public.invoices FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Enable public select/insert for anonymous users" ON public.invoices FOR SELECT USING (true);
-CREATE POLICY "Enable public insert for invoices" ON public.invoices FOR INSERT WITH CHECK (true);
-CREATE POLICY "Enable public update for invoices" ON public.invoices FOR UPDATE USING (true);
-
--- 3. Create appointments table
-CREATE TABLE IF NOT EXISTS public.appointments (
-    id TEXT PRIMARY KEY,
-    "clientName" TEXT NOT NULL, -- Keep camelCase to match frontend keys
-    email TEXT NOT NULL,
-    phone TEXT,
-    country TEXT NOT NULL,
-    "visaType" TEXT,
-    date DATE NOT NULL,
-    time TEXT NOT NULL,
-    status TEXT NOT NULL CHECK (status IN ('scheduled', 'completed', 'cancelled')),
-    "createdDate" DATE NOT NULL, -- Keep camelCase to match frontend keys
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+create table if not exists public.countries (
+  id uuid primary key default gen_random_uuid(),
+  name text not null unique,
+  code text,
+  active boolean not null default true,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
 );
 
--- Enable RLS for appointments
-ALTER TABLE public.appointments ENABLE ROW LEVEL SECURITY;
+drop trigger if exists countries_touch_updated_at on public.countries;
+create trigger countries_touch_updated_at
+before update on public.countries
+for each row execute procedure public.touch_updated_at();
 
-CREATE POLICY "Enable all actions for appointments" ON public.appointments FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Enable select for appointments" ON public.appointments FOR SELECT USING (true);
-CREATE POLICY "Enable insert for appointments" ON public.appointments FOR INSERT WITH CHECK (true);
+create table if not exists public.inquiries (
+  id uuid primary key default gen_random_uuid(),
+  full_name text not null,
+  email text not null,
+  phone text,
+  country text,
+  subject text not null default 'Visa Inquiry',
+  message text not null,
+  status text not null default 'new' check (status in ('new', 'reviewing', 'resolved', 'closed')),
+  source text not null default 'website',
+  client_id uuid references public.clients(id) on delete set null,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
 
--- 4. Seed Default accounts
-INSERT INTO public.users (email, password, name, role, status)
-VALUES 
-('admin@cvs.com', 'admin123', 'Rajesh Sharma', 'admin', 'active'),
-('employee@cvs.com', 'employee123', 'Anita Thapa', 'employee', 'active'),
-('customer@cvs.com', 'customer123', 'Ram Bahadur', 'customer', 'active')
-ON CONFLICT (email) DO NOTHING;
+drop trigger if exists inquiries_touch_updated_at on public.inquiries;
+create trigger inquiries_touch_updated_at
+before update on public.inquiries
+for each row execute procedure public.touch_updated_at();
 
--- Seed Default Invoices
-INSERT INTO public.invoices (id, client, passport, country, "visaType", amount, status, date, email, notes)
-VALUES
-('INV-2081-001', 'Ram Bahadur Thapa', 'NP12345678', 'China', 'Tourist (L)', 15000, 'paid', '2081-01-15', 'ram@email.com', 'Urgent China Tourist Visa processing.'),
-('INV-2081-002', 'Sita Devi Sharma', 'NP87654321', 'Japan', 'Student', 18000, 'pending', '2081-02-03', 'sita@email.com', 'Japan Student Visa document checking.'),
-('INV-2081-003', 'Hari Prasad KC', 'NP11223344', 'China', 'Business (M)', 20000, 'paid', '2081-02-20', 'hari@email.com', 'China Business Visa submission.'),
-('INV-2081-004', 'Gita Adhikari', 'NP55667788', 'South Korea', 'Tourist', 12000, 'draft', '2081-03-10', 'gita@email.com', 'Drafting South Korea Tourist documents.'),
-('INV-2081-005', 'Bikash Gurung', 'NP99887766', 'China', 'Student (X)', 22000, 'pending', '2081-03-18', 'bikash@email.com', 'China Student Visa documentation assistance.')
-ON CONFLICT (id) DO NOTHING;
+create table if not exists public.appointments (
+  id text primary key,
+  client_name text not null,
+  email text not null,
+  phone text,
+  country text not null,
+  visa_type text,
+  purpose text,
+  date date not null,
+  time text not null,
+  status text not null default 'scheduled' check (status in ('scheduled', 'completed', 'cancelled')),
+  notes text,
+  created_date date not null default current_date,
+  customer_id uuid references public.clients(id) on delete set null,
+  created_by uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
+drop trigger if exists appointments_touch_updated_at on public.appointments;
+create trigger appointments_touch_updated_at
+before update on public.appointments
+for each row execute procedure public.touch_updated_at();
+
+create table if not exists public.invoices (
+  id text primary key,
+  client text not null,
+  passport text not null,
+  passport_list jsonb not null default '[]'::jsonb,
+  traveler_count integer not null default 1,
+  invoice_mode text not null default 'personal' check (invoice_mode in ('personal', 'group')),
+  country text not null,
+  visa_type text not null,
+  amount numeric(12,2) not null default 0,
+  subtotal numeric(12,2) not null default 0,
+  tax_rate numeric(8,2) not null default 0,
+  tax_amount numeric(12,2) not null default 0,
+  total numeric(12,2) not null default 0,
+  status text not null default 'draft' check (status in ('paid', 'pending', 'draft')),
+  date date not null default current_date,
+  issue_date date,
+  due_date date,
+  email text,
+  notes text,
+  payment_terms text,
+  payment_method text,
+  currency text not null default 'NPR',
+  service_items jsonb not null default '[]'::jsonb,
+  customer_id uuid references public.clients(id) on delete set null,
+  created_by uuid references public.profiles(id) on delete set null,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
+drop trigger if exists invoices_touch_updated_at on public.invoices;
+create trigger invoices_touch_updated_at
+before update on public.invoices
+for each row execute procedure public.touch_updated_at();
+
+create table if not exists public.service_catalog (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  description text not null,
+  icon text,
+  sort_order integer not null default 0,
+  active boolean not null default true,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
+drop trigger if exists service_catalog_touch_updated_at on public.service_catalog;
+create trigger service_catalog_touch_updated_at
+before update on public.service_catalog
+for each row execute procedure public.touch_updated_at();
+
+create or replace function public.is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.profiles
+    where id = auth.uid() and role = 'admin' and status = 'active'
+  );
+$$;
+
+create or replace function public.is_staff()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from public.profiles
+    where id = auth.uid() and role in ('admin', 'employee') and status = 'active'
+  );
+$$;
+
+alter table public.profiles enable row level security;
+alter table public.clients enable row level security;
+alter table public.countries enable row level security;
+alter table public.inquiries enable row level security;
+alter table public.appointments enable row level security;
+alter table public.invoices enable row level security;
+alter table public.service_catalog enable row level security;
+
+drop policy if exists "profiles_select_self_or_staff" on public.profiles;
+create policy "profiles_select_self_or_staff"
+on public.profiles
+for select
+using (auth.uid() = id or public.is_staff());
+
+drop policy if exists "profiles_insert_self" on public.profiles;
+create policy "profiles_insert_self"
+on public.profiles
+for insert
+with check (auth.uid() = id);
+
+drop policy if exists "profiles_update_self_or_admin" on public.profiles;
+create policy "profiles_update_self_or_admin"
+on public.profiles
+for update
+using (auth.uid() = id or public.is_admin())
+with check (auth.uid() = id or public.is_admin());
+
+drop policy if exists "profiles_delete_admin" on public.profiles;
+create policy "profiles_delete_admin"
+on public.profiles
+for delete
+using (public.is_admin());
+
+drop policy if exists "clients_select_staff" on public.clients;
+create policy "clients_select_staff"
+on public.clients
+for select
+using (public.is_staff());
+
+drop policy if exists "clients_insert_public" on public.clients;
+create policy "clients_insert_public"
+on public.clients
+for insert
+with check (true);
+
+drop policy if exists "clients_update_staff" on public.clients;
+create policy "clients_update_staff"
+on public.clients
+for update
+using (public.is_staff())
+with check (public.is_staff());
+
+drop policy if exists "clients_delete_admin" on public.clients;
+create policy "clients_delete_admin"
+on public.clients
+for delete
+using (public.is_admin());
+
+drop policy if exists "countries_select_public" on public.countries;
+create policy "countries_select_public"
+on public.countries
+for select
+using (true);
+
+drop policy if exists "countries_insert_staff" on public.countries;
+create policy "countries_insert_staff"
+on public.countries
+for insert
+with check (public.is_staff());
+
+drop policy if exists "countries_update_staff" on public.countries;
+create policy "countries_update_staff"
+on public.countries
+for update
+using (public.is_staff())
+with check (public.is_staff());
+
+drop policy if exists "countries_delete_admin" on public.countries;
+create policy "countries_delete_admin"
+on public.countries
+for delete
+using (public.is_admin());
+
+drop policy if exists "inquiries_select_staff" on public.inquiries;
+create policy "inquiries_select_staff"
+on public.inquiries
+for select
+using (public.is_staff());
+
+drop policy if exists "inquiries_insert_public" on public.inquiries;
+create policy "inquiries_insert_public"
+on public.inquiries
+for insert
+with check (true);
+
+drop policy if exists "inquiries_update_staff" on public.inquiries;
+create policy "inquiries_update_staff"
+on public.inquiries
+for update
+using (public.is_staff())
+with check (public.is_staff());
+
+drop policy if exists "inquiries_delete_admin" on public.inquiries;
+create policy "inquiries_delete_admin"
+on public.inquiries
+for delete
+using (public.is_admin());
+
+drop policy if exists "appointments_select_public_or_owner_or_staff" on public.appointments;
+create policy "appointments_select_public_or_owner_or_staff"
+on public.appointments
+for select
+using (true);
+
+drop policy if exists "appointments_insert_public" on public.appointments;
+create policy "appointments_insert_public"
+on public.appointments
+for insert
+with check (true);
+
+drop policy if exists "appointments_update_staff" on public.appointments;
+create policy "appointments_update_staff"
+on public.appointments
+for update
+using (public.is_staff())
+with check (public.is_staff());
+
+drop policy if exists "appointments_delete_admin" on public.appointments;
+create policy "appointments_delete_admin"
+on public.appointments
+for delete
+using (public.is_admin());
+
+drop policy if exists "invoices_select_staff" on public.invoices;
+create policy "invoices_select_staff"
+on public.invoices
+for select
+using (public.is_staff());
+
+drop policy if exists "invoices_insert_staff" on public.invoices;
+create policy "invoices_insert_staff"
+on public.invoices
+for insert
+with check (public.is_staff());
+
+drop policy if exists "invoices_update_staff" on public.invoices;
+create policy "invoices_update_staff"
+on public.invoices
+for update
+using (public.is_staff())
+with check (public.is_staff());
+
+drop policy if exists "invoices_delete_admin" on public.invoices;
+create policy "invoices_delete_admin"
+on public.invoices
+for delete
+using (public.is_admin());
+
+drop policy if exists "service_catalog_select_public" on public.service_catalog;
+create policy "service_catalog_select_public"
+on public.service_catalog
+for select
+using (true);
+
+drop policy if exists "service_catalog_insert_staff" on public.service_catalog;
+create policy "service_catalog_insert_staff"
+on public.service_catalog
+for insert
+with check (public.is_staff());
+
+drop policy if exists "service_catalog_update_staff" on public.service_catalog;
+create policy "service_catalog_update_staff"
+on public.service_catalog
+for update
+using (public.is_staff())
+with check (public.is_staff());
+
+drop policy if exists "service_catalog_delete_admin" on public.service_catalog;
+create policy "service_catalog_delete_admin"
+on public.service_catalog
+for delete
+using (public.is_admin());
+
+insert into public.service_catalog (title, description, icon, sort_order)
+values
+  ('Tourist Visa', 'Complete assistance for leisure and sightseeing visa applications with documentation support.', '🛂', 1),
+  ('Business Visa', 'Professional visa processing for business travelers, trade delegates, and corporate representatives.', '💼', 2),
+  ('Student Visa', 'Comprehensive support for students seeking to study abroad with scholarship and university guidance.', '🎓', 3),
+  ('Family Reunion Visa', 'Expert assistance for family reunion and dependent visa applications with proper documentation.', '👨‍👩‍👧‍👦', 4),
+  ('Transit Visa', 'Quick processing for transit visa requirements for travelers passing through supported countries.', '✈️', 5),
+  ('Document Verification', 'Professional verification and authentication of all required travel and visa documents.', '📋', 6)
+on conflict do nothing;
+
+insert into public.countries (name, code, sort_order)
+values
+  ('China', 'CN', 1),
+  ('Japan', 'JP', 2),
+  ('South Korea', 'KR', 3)
+on conflict (name) do nothing;

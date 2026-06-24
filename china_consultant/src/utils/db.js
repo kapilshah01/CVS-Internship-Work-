@@ -1,195 +1,488 @@
+import { isSupabaseConfigured, requireSupabase, supabase } from '../lib/supabase';
+import { appointmentService } from '../services/appointmentService';
+import { clientService } from '../services/clientService';
+import { inquiryService } from '../services/inquiryService';
+import { invoiceService } from '../services/invoiceService';
 import { normalizeInvoice } from './invoice';
-
-const DEFAULT_USERS = [
-  { email: 'admin@cvs.com', password: 'admin123', name: 'Rajesh Sharma', phone: '+977 985-1014899', role: 'admin', status: 'active' },
-  { email: 'employee@cvs.com', password: 'employee123', name: 'Anita Thapa', phone: '+977 984-2203344', role: 'employee', status: 'active' },
-  { email: 'customer@cvs.com', password: 'customer123', name: 'Ram Bahadur', phone: '+977 981-7755331', role: 'customer', status: 'active' },
-];
 
 const EMPLOYEE_REGISTRATION_CODE = '16923';
 const ADMIN_REGISTRATION_CODE = '27034';
-const ADMIN_RESET_STORE_KEY = 'cvs-admin-reset-codes';
 
-const DEFAULT_INVOICES = [
-  { id: 'INV-2081-001', client: 'Ram Bahadur Thapa', passport: 'NP12345678', country: 'China', visaType: 'Tourist (L)', amount: 15000, status: 'paid', date: '2081-01-15', email: 'ram@email.com', notes: 'Urgent China Tourist Visa processing.' },
-  { id: 'INV-2081-002', client: 'Sita Devi Sharma', passport: 'NP87654321', country: 'Japan', visaType: 'Student', amount: 18000, status: 'pending', date: '2081-02-03', email: 'sita@email.com', notes: 'Japan Student Visa document checking.' },
-  { id: 'INV-2081-003', client: 'Hari Prasad KC', passport: 'NP11223344', country: 'China', visaType: 'Business (M)', amount: 20000, status: 'paid', date: '2081-02-20', email: 'hari@email.com', notes: 'China Business Visa submission.' },
-  { id: 'INV-2081-004', client: 'Gita Adhikari', passport: 'NP55667788', country: 'South Korea', visaType: 'Tourist', amount: 12000, status: 'draft', date: '2081-03-10', email: 'gita@email.com', notes: 'Drafting South Korea Tourist documents.' },
-  { id: 'INV-2081-005', client: 'Bikash Gurung', passport: 'NP99887766', country: 'China', visaType: 'Student (X)', amount: 22000, status: 'pending', date: '2081-03-18', email: 'bikash@email.com', notes: 'China Student Visa documentation assistance.' },
-];
+const normalizeProfile = (row) => ({
+  id: row.id,
+  email: row.email,
+  name: row.name,
+  phone: row.phone || '',
+  role: row.role,
+  status: row.status,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+});
 
-const initDB = (key, defaultData) => {
-  if (!localStorage.getItem(key)) {
-    localStorage.setItem(key, JSON.stringify(defaultData));
+const normalizeClient = (row) => ({
+  id: row.id,
+  email: row.email,
+  name: row.name,
+  phone: row.phone || '',
+  country: row.country || '',
+  source: row.source || '',
+  status: row.status || 'new',
+  notes: row.notes || '',
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+});
+
+const normalizeAppointment = (row) => ({
+  id: row.id,
+  clientName: row.client_name,
+  email: row.email,
+  phone: row.phone || '',
+  country: row.country,
+  visaType: row.visa_type || '',
+  purpose: row.purpose || row.visa_type || '',
+  date: row.date,
+  time: row.time,
+  status: row.status,
+  notes: row.notes || '',
+  createdDate: row.created_date,
+  customerId: row.customer_id || null,
+  createdBy: row.created_by || null,
+});
+
+const normalizeInquiry = (row) => ({
+  id: row.id,
+  fullName: row.full_name,
+  email: row.email,
+  phone: row.phone || '',
+  country: row.country || '',
+  subject: row.subject,
+  message: row.message,
+  status: row.status,
+  source: row.source,
+  clientId: row.client_id || null,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+});
+
+const normalizeInvoiceRow = (row) =>
+  normalizeInvoice({
+    id: row.id,
+    client: row.client,
+    passport: row.passport,
+    passportList: row.passport_list || [],
+    travelerCount: row.traveler_count || 1,
+    invoiceMode: row.invoice_mode || 'personal',
+    country: row.country,
+    visaType: row.visa_type,
+    amount: Number(row.amount || 0),
+    subtotal: Number(row.subtotal || 0),
+    taxRate: Number(row.tax_rate || 0),
+    taxAmount: Number(row.tax_amount || 0),
+    total: Number(row.total || 0),
+    status: row.status,
+    date: row.date,
+    issueDate: row.issue_date,
+    dueDate: row.due_date,
+    email: row.email || '',
+    notes: row.notes || '',
+    paymentTerms: row.payment_terms || '',
+    paymentMethod: row.payment_method || '',
+    currency: row.currency || 'NPR',
+    serviceItems: row.service_items || [],
+    customerId: row.customer_id || null,
+    createdBy: row.created_by || null,
+  });
+
+const createRecordId = (prefix) => {
+  const stamp = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
+  const random = Math.random().toString(36).slice(2, 6).toUpperCase();
+  return `${prefix}-${stamp}-${random}`;
+};
+
+async function getCurrentProfile() {
+  const client = requireSupabase();
+  const {
+    data: { session },
+  } = await client.auth.getSession();
+
+  if (!session?.user) return null;
+
+  const { data, error } = await client
+    .from('profiles')
+    .select('*')
+    .eq('id', session.user.id)
+    .single();
+  if (error) throw new Error(error.message);
+  const profile = data;
+  return normalizeProfile(profile);
+}
+
+async function getProfileById(id, retries = 5) {
+  if (!id) return null;
+
+  for (let attempt = 0; attempt < retries; attempt += 1) {
+    try {
+      const client = requireSupabase();
+      const { data, error } = await client.from('profiles').select('*').eq('id', id).single();
+      if (error) throw new Error(error.message);
+      const profile = data;
+      if (profile) {
+        return normalizeProfile(profile);
+      }
+    } catch (error) {
+      if (attempt === retries - 1) {
+        throw error;
+      }
+    }
+
+    await new Promise((resolve) => window.setTimeout(resolve, 300));
   }
-};
 
-export const dbInit = () => {
-  initDB('cvs-users', DEFAULT_USERS);
-  initDB('cvs-invoices', DEFAULT_INVOICES);
-  initDB('cvs-appointments', []);
-};
+  return null;
+}
 
-export const dbGetUsers = async () => {
-  dbInit();
-  return JSON.parse(localStorage.getItem('cvs-users'));
-};
+export { isSupabaseConfigured };
 
-export const dbRegisterUser = async (newUser) => {
-  dbInit();
-  const users = JSON.parse(localStorage.getItem('cvs-users')) || DEFAULT_USERS;
+export async function dbInit() {
+  requireSupabase();
+}
 
-  if (newUser.role === 'admin' && newUser.adminCode !== ADMIN_REGISTRATION_CODE) {
+export async function dbGetCurrentUser() {
+  return getCurrentProfile();
+}
+
+export function dbOnAuthStateChange(callback) {
+  if (!supabase) {
+    return { data: { subscription: { unsubscribe() {} } } };
+  }
+
+  return supabase.auth.onAuthStateChange(async () => {
+    try {
+      callback(await getCurrentProfile());
+    } catch {
+      callback(null);
+    }
+  });
+}
+
+export async function dbLogoutUser() {
+  const client = requireSupabase();
+  const { error } = await client.auth.signOut();
+  if (error) throw error;
+}
+
+export async function dbRegisterUser(newUser) {
+  const role = newUser.role || 'employee';
+
+  if (!['admin', 'employee'].includes(role)) {
+    return { success: false, message: 'Public customer registration is disabled. Please use the website inquiry or appointment forms instead.' };
+  }
+
+  const client = requireSupabase();
+  const email = newUser.email.trim();
+  const redirectPath = role === 'admin' ? '/admin/login' : '/employee/login';
+
+  if (role === 'admin' && newUser.adminCode !== ADMIN_REGISTRATION_CODE) {
     return { success: false, message: 'Invalid administrator registration code.' };
   }
 
-  if (newUser.role === 'employee' && newUser.employeeCode !== EMPLOYEE_REGISTRATION_CODE) {
+  if (role === 'employee' && newUser.employeeCode !== EMPLOYEE_REGISTRATION_CODE) {
     return { success: false, message: 'Invalid employee registration code.' };
   }
 
-  if (users.find((u) => u.email.toLowerCase() === newUser.email.toLowerCase())) {
-    return { success: false, message: 'Email already registered.' };
-  }
-  const user = {
-    ...newUser,
-    employeeCode: undefined,
-    adminCode: undefined,
-    status: newUser.role === 'customer' ? 'active' : 'pending',
-  };
-  users.push(user);
-  localStorage.setItem('cvs-users', JSON.stringify(users));
-  return { success: true, user };
-};
+  const { data, error } = await client.auth.signUp({
+    email,
+    password: newUser.password,
+    options: {
+      emailRedirectTo: `${window.location.origin}${redirectPath}`,
+      data: {
+        name: newUser.name.trim(),
+        phone: newUser.phone?.trim() || '',
+        role,
+        status: role === 'admin' ? 'pending' : 'active',
+      },
+    },
+  });
 
-export const dbLoginUser = async (email, password, role) => {
-  const users = await dbGetUsers();
-  const user = users.find((u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password && u.role === role);
-  if (!user) {
-    return { success: false, message: 'Invalid credentials or role.' };
-  }
-  if (user.status === 'pending') {
-    return { success: false, message: 'Your account is pending administrator approval.' };
-  }
-  return { success: true, user };
-};
-
-export const dbUpdateUserStatus = async (email, status) => {
-  const users = await dbGetUsers();
-  const updated = users.map((u) => u.email.toLowerCase() === email.toLowerCase() ? { ...u, status } : u);
-  localStorage.setItem('cvs-users', JSON.stringify(updated));
-  return { success: true };
-};
-
-export const dbUpdateUserPassword = async (email, password) => {
-  const users = await dbGetUsers();
-  const updated = users.map((u) => (
-    u.email.toLowerCase() === email.toLowerCase() ? { ...u, password } : u
-  ));
-  localStorage.setItem('cvs-users', JSON.stringify(updated));
-  return { success: true };
-};
-
-export const dbRequestAdminPasswordReset = async (email, phone) => {
-  const users = await dbGetUsers();
-  const adminUser = users.find((u) => u.role === 'admin' && u.email.toLowerCase() === email.toLowerCase());
-
-  if (!adminUser) {
-    return { success: false, message: 'Administrator account not found for this email.' };
+  if (error) {
+    return { success: false, message: error.message };
   }
 
-  const normalizedStoredPhone = (adminUser.phone || '').replace(/[^0-9]/g, '');
-  const normalizedInputPhone = (phone || '').replace(/[^0-9]/g, '');
+  const userId = data.user?.id || null;
+  const hasSession = Boolean(data.session);
+  const profile = userId ? await getProfileById(userId).catch(() => null) : null;
 
-  if (!normalizedStoredPhone || normalizedStoredPhone !== normalizedInputPhone) {
-    return { success: false, message: 'Phone number verification failed for this administrator account.' };
+  if (data.session) {
+    await client.auth.signOut();
   }
-
-  const verificationCode = String(Math.floor(100000 + Math.random() * 900000));
-  const resetStore = JSON.parse(localStorage.getItem(ADMIN_RESET_STORE_KEY) || '{}');
-  resetStore[email.toLowerCase()] = {
-    code: verificationCode,
-    createdAt: Date.now(),
-  };
-  localStorage.setItem(ADMIN_RESET_STORE_KEY, JSON.stringify(resetStore));
 
   return {
     success: true,
-    maskedPhone: adminUser.phone,
-    demoCode: verificationCode,
-    message: 'Verification code generated successfully.',
+    user: profile,
+    requiresEmailConfirmation: !hasSession,
+    message: !hasSession
+      ? `Registration successful. A verification email has been sent to ${email}. Please verify your email before signing in.`
+      : role === 'admin'
+        ? 'Administrator account created. An existing admin must activate it before you can sign in.'
+        : 'Employee account created successfully. You can sign in now.',
   };
-};
+}
 
-export const dbConfirmAdminPasswordReset = async (email, code, newPassword) => {
-  const resetStore = JSON.parse(localStorage.getItem(ADMIN_RESET_STORE_KEY) || '{}');
-  const record = resetStore[email.toLowerCase()];
-
-  if (!record) {
-    return { success: false, message: 'No verification request found. Please request a new code.' };
+export async function dbLoginUser(email, password, role) {
+  if (!['admin', 'employee'].includes(role)) {
+    return { success: false, message: 'Only admin and employee login is available.' };
   }
 
-  const isExpired = Date.now() - record.createdAt > 10 * 60 * 1000;
-  if (isExpired) {
-    delete resetStore[email.toLowerCase()];
-    localStorage.setItem(ADMIN_RESET_STORE_KEY, JSON.stringify(resetStore));
-    return { success: false, message: 'Verification code expired. Please request a new one.' };
+  const client = requireSupabase();
+  const { data, error } = await client.auth.signInWithPassword({ email: email.trim(), password });
+
+  if (error) {
+    if (/email.*confirm|email.*verified|not confirmed/i.test(error.message)) {
+      return { success: false, message: 'Your email is not verified yet. Please open the verification link from your inbox first.' };
+    }
+    return { success: false, message: error.message };
   }
 
-  if (record.code !== String(code).trim()) {
-    return { success: false, message: 'Invalid verification code.' };
+  const profile = await getCurrentProfile() || await getProfileById(data.user?.id).catch(() => null);
+  if (!profile) {
+    await client.auth.signOut();
+    return { success: false, message: 'Profile not ready yet for this account. Please try again in a moment.' };
   }
 
-  await dbUpdateUserPassword(email, newPassword);
-  delete resetStore[email.toLowerCase()];
-  localStorage.setItem(ADMIN_RESET_STORE_KEY, JSON.stringify(resetStore));
-  return { success: true };
-};
+  if (profile.role !== role) {
+    await client.auth.signOut();
+    return { success: false, message: 'This account is registered under a different role.' };
+  }
 
-export const dbGetInvoices = async () => {
-  dbInit();
-  return JSON.parse(localStorage.getItem('cvs-invoices')).map(normalizeInvoice);
-};
+  if (profile.status === 'pending') {
+    await client.auth.signOut();
+    return {
+      success: false,
+      message: profile.role === 'admin'
+        ? 'Your admin account is waiting for approval from an active administrator.'
+        : 'Your account is pending approval.',
+    };
+  }
 
-export const dbAddInvoice = async (invoice) => {
-  const invoices = await dbGetInvoices();
-  const newInvoice = normalizeInvoice({
-    ...invoice,
-    id: `INV-2081-${String(invoices.length + 1).padStart(3, '0')}`,
-    date: new Date().toISOString().split('T')[0],
+  if (profile.status !== 'active') {
+    await client.auth.signOut();
+    return { success: false, message: 'This account is not active. Please contact the administrator.' };
+  }
+
+  return { success: true, user: profile };
+}
+
+export async function dbRequestAdminPasswordReset(email) {
+  const client = requireSupabase();
+  const { error } = await client.auth.resetPasswordForEmail(email.trim(), {
+    redirectTo: `${window.location.origin}/admin/login`,
   });
-  invoices.unshift(newInvoice);
-  localStorage.setItem('cvs-invoices', JSON.stringify(invoices));
-  return newInvoice;
-};
 
-export const dbUpdateInvoiceStatus = async (id, status) => {
-  const invoices = await dbGetInvoices();
-  const updated = invoices.map((inv) => inv.id === id ? { ...inv, status } : inv);
-  localStorage.setItem('cvs-invoices', JSON.stringify(updated));
-  return { success: true };
-};
+  if (error) {
+    return { success: false, message: error.message };
+  }
 
-export const dbGetAppointments = async () => {
-  dbInit();
-  return JSON.parse(localStorage.getItem('cvs-appointments'));
-};
+  return { success: true, message: 'Password reset email sent. Please check your inbox.' };
+}
 
-export const dbAddAppointment = async (appt) => {
-  const appts = await dbGetAppointments();
-  const newAppt = {
-    id: `APT-${String(appts.length + 1).padStart(4, '0')}`,
-    ...appt,
-    status: 'scheduled',
-    createdDate: new Date().toISOString().split('T')[0],
+export async function dbResendVerificationEmail(email) {
+  const client = requireSupabase();
+  const cleanEmail = email.trim();
+  const redirectTo = `${window.location.origin}/employee/login`;
+  const { error } = await client.auth.resend({
+    type: 'signup',
+    email: cleanEmail,
+    options: { emailRedirectTo: redirectTo },
+  });
+
+  if (error) {
+    return { success: false, message: error.message };
+  }
+
+  return {
+    success: true,
+    message: `Verification email sent to ${cleanEmail}. Please check your inbox and spam folder.`,
   };
-  appts.unshift(newAppt);
-  localStorage.setItem('cvs-appointments', JSON.stringify(appts));
-  return newAppt;
-};
+}
 
-export const dbUpdateAppointmentStatus = async (id, status) => {
-  const appts = await dbGetAppointments();
-  const updated = appts.map((appt) => appt.id === id ? { ...appt, status } : appt);
-  localStorage.setItem('cvs-appointments', JSON.stringify(updated));
+export async function dbGetUsers(filters = {}) {
+  const client = requireSupabase();
+  let query = client.from('profiles').select('*').order('created_at', { ascending: false });
+  if (filters.role) query = query.eq('role', filters.role);
+  if (filters.status) query = query.eq('status', filters.status);
+  if (filters.search) {
+    const term = `%${filters.search.trim()}%`;
+    query = query.or(`name.ilike.${term},email.ilike.${term},phone.ilike.${term}`);
+  }
+  const { data, error } = await query;
+  if (error) throw new Error(error.message);
+  return data.map(normalizeProfile);
+}
+
+export async function dbUpdateUserStatus(email, status) {
+  const users = await dbGetUsers({ search: email });
+  const target = users.find((row) => row.email.toLowerCase() === email.trim().toLowerCase());
+  if (!target) throw new Error('User not found.');
+  const client = requireSupabase();
+  const { error } = await client.from('profiles').update({ status }).eq('id', target.id);
+  if (error) throw new Error(error.message);
   return { success: true };
-};
+}
+
+export async function dbDeleteUserProfile(id) {
+  const client = requireSupabase();
+  const { error } = await client.from('profiles').delete().eq('id', id);
+  if (error) throw new Error(error.message);
+  return { success: true };
+}
+
+export async function dbGetClients(filters = {}) {
+  const data = await clientService.getAll(filters);
+  return data.map(normalizeClient);
+}
+
+export async function dbAddClient(payload) {
+  const created = await clientService.create(payload);
+  return normalizeClient(created);
+}
+
+export async function dbUpdateClient(id, payload) {
+  const updated = await clientService.update(id, payload);
+  return normalizeClient(updated);
+}
+
+export async function dbDeleteClient(id) {
+  await clientService.delete(id);
+  return { success: true };
+}
+
+async function ensureClientRecord({ name, email, phone = '', country = '', source = 'website', notes = '' }) {
+  if (!email?.trim()) return null;
+
+  const existing = await clientService.getAll({ search: email.trim() });
+  const found = existing.find((item) => item.email?.toLowerCase() === email.trim().toLowerCase());
+
+  if (found) {
+    return normalizeClient(await clientService.update(found.id, {
+      name: name || found.name,
+      phone: phone || found.phone,
+      country: country || found.country,
+      source: source || found.source,
+      notes: notes || found.notes,
+      status: found.status || 'new',
+    }));
+  }
+
+  return dbAddClient({ name, email, phone, country, source, notes, status: 'new' });
+}
+
+async function ensureClientRecordSafe(payload) {
+  try {
+    return await ensureClientRecord(payload);
+  } catch {
+    return null;
+  }
+}
+
+export async function dbGetInvoices(filters = {}) {
+  const data = await invoiceService.getAll(filters);
+  return data.map(normalizeInvoiceRow);
+}
+
+export async function dbAddInvoice(invoice) {
+  let user = null;
+  try {
+    user = await getCurrentProfile();
+  } catch (error) {
+    console.warn('Unable to load current profile for invoice creation:', error);
+  }
+  const record = normalizeInvoice({
+    ...invoice,
+    id: createRecordId('INV'),
+    date: invoice.date || new Date().toISOString().split('T')[0],
+  });
+
+  const created = await invoiceService.create({
+    ...record,
+    createdBy: user?.id || null,
+  });
+
+  return normalizeInvoiceRow(created);
+}
+
+export async function dbUpdateInvoiceStatus(id, status) {
+  await invoiceService.update(id, { status });
+  return { success: true };
+}
+
+export async function dbDeleteInvoice(id) {
+  await invoiceService.delete(id);
+  return { success: true };
+}
+
+export async function dbGetAppointments(filters = {}) {
+  const data = await appointmentService.getAll(filters);
+  return data.map(normalizeAppointment);
+}
+
+export async function dbAddAppointment(appt) {
+  const user = await getCurrentProfile();
+  const clientRecord = await ensureClientRecordSafe({
+    name: appt.clientName,
+    email: appt.email,
+    phone: appt.phone || '',
+    country: appt.country || '',
+    source: 'appointment',
+    notes: appt.notes || '',
+  });
+  const created = await appointmentService.create({
+    ...appt,
+    id: appt.id || createRecordId('APT'),
+    createdDate: appt.createdDate || new Date().toISOString().split('T')[0],
+    customerId: appt.customerId || clientRecord?.id || null,
+    createdBy: appt.createdBy || user?.id || null,
+  });
+  return normalizeAppointment(created);
+}
+
+export async function dbUpdateAppointmentStatus(id, status) {
+  await appointmentService.update(id, { status });
+  return { success: true };
+}
+
+export async function dbDeleteAppointment(id) {
+  await appointmentService.delete(id);
+  return { success: true };
+}
+
+export async function dbGetInquiries(filters = {}) {
+  const data = await inquiryService.getAll(filters);
+  return data.map(normalizeInquiry);
+}
+
+export async function dbAddInquiry(inquiry) {
+  const user = await getCurrentProfile();
+  const clientRecord = await ensureClientRecordSafe({
+    name: inquiry.fullName,
+    email: inquiry.email,
+    phone: inquiry.phone || '',
+    country: inquiry.country || '',
+    source: inquiry.source || 'website',
+    notes: inquiry.message || '',
+  });
+  const created = await inquiryService.create({
+    ...inquiry,
+    clientId: inquiry.clientId || clientRecord?.id || user?.id || null,
+  });
+  return normalizeInquiry(created);
+}
+
+export async function dbUpdateInquiry(id, payload) {
+  const updated = await inquiryService.update(id, payload);
+  return normalizeInquiry(updated);
+}
+
+export async function dbDeleteInquiry(id) {
+  await inquiryService.delete(id);
+  return { success: true };
+}

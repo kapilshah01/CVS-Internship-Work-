@@ -2,16 +2,17 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { COMPANY } from '../data/siteData';
 
-import { dbRegisterUser } from '../utils/db';
+import { dbRegisterUser, dbResendVerificationEmail } from '../utils/db';
 
-export default function Register({ onLogin }) {
+export default function Register({ initialRole = 'employee' }) {
   const navigate = useNavigate();
   const [form, setForm] = useState({
-    name: '', email: '', phone: '', password: '', confirm: '', role: 'customer', employeeCode: '', adminCode: '',
+    name: '', email: '', phone: '', password: '', confirm: '', role: initialRole, employeeCode: '', adminCode: '',
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResending, setIsResending] = useState(false);
   const [showAccessCode, setShowAccessCode] = useState(false);
 
   const handleSubmit = async (e) => {
@@ -60,16 +61,41 @@ export default function Register({ onLogin }) {
         return;
       }
 
-      if (form.role === 'employee' || form.role === 'admin') {
-        setSuccess(`${form.role === 'admin' ? 'Administrator' : 'Employee'} registration successful! Please log in once the super administrator approves your account.`);
-        setForm({ name: '', email: '', phone: '', password: '', confirm: '', role: 'customer', employeeCode: '', adminCode: '' });
-      } else {
-        const user = res.user;
-        if (onLogin) onLogin(user);
-        navigate('/customer-dashboard');
-      }
+      setSuccess(
+        res.message ||
+        `${form.role === 'admin' ? 'Administrator' : 'Employee'} registration successful. Please continue after verification.`
+      );
+      const nextRole = form.role;
+      const nextEmail = form.email;
+      setForm({ name: '', email: nextEmail, phone: '', password: '', confirm: '', role: nextRole, employeeCode: '', adminCode: '' });
+      window.setTimeout(() => {
+        navigate(nextRole === 'admin' ? '/admin/login' : '/employee/login');
+      }, 1800);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (isResending) return;
+    setError('');
+    setSuccess('');
+
+    if (!form.email.trim()) {
+      setError('Enter the email address used for registration to resend verification.');
+      return;
+    }
+
+    setIsResending(true);
+    try {
+      const result = await dbResendVerificationEmail(form.email);
+      if (!result.success) {
+        setError(result.message);
+        return;
+      }
+      setSuccess(result.message);
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -78,13 +104,31 @@ export default function Register({ onLogin }) {
   return (
     <div className="auth-page">
       <div className="auth-card">
+        <div style={{ marginBottom: '1rem' }}>
+          <Link
+            to="/"
+            style={{
+              color: 'var(--color-text-light)',
+              textDecoration: 'none',
+              fontSize: '0.95rem',
+              fontWeight: 600,
+            }}
+          >
+            ← Back to website
+          </Link>
+        </div>
+
         <div className="auth-card__header">
           <div className="auth-card__logo">
             <span className="navbar__logo-icon">CV</span>
             {COMPANY.shortName}
           </div>
-          <h1 className="auth-card__title">Create Account</h1>
-          <p className="auth-card__subtitle">Join us to access visa services</p>
+          <h1 className="auth-card__title">{form.role === 'admin' ? 'Admin Registration' : 'Staff Registration'}</h1>
+          <p className="auth-card__subtitle">
+            {form.role === 'admin'
+              ? 'Create an admin account using the administrator access code.'
+              : 'Create an employee or admin account with an office access code.'}
+          </p>
         </div>
 
         {error && (
@@ -119,17 +163,19 @@ export default function Register({ onLogin }) {
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="reg-phone">Phone Number</label>
-            <input className="form-input" id="reg-phone" type="tel" placeholder="Enter your phone number" value={form.phone} onChange={update('phone')} disabled={isSubmitting} />
+            <label className="form-label" htmlFor="reg-phone">Phone Number *</label>
+            <input className="form-input" id="reg-phone" type="tel" placeholder="Enter your phone number" value={form.phone} onChange={update('phone')} disabled={isSubmitting} required />
           </div>
 
           <div className="form-group">
             <label className="form-label" htmlFor="reg-role">Register As</label>
             <select className="form-select" id="reg-role" value={form.role} onChange={update('role')} disabled={isSubmitting}>
-              <option value="customer">Customer</option>
               <option value="employee">Employee</option>
               <option value="admin">Administrator</option>
             </select>
+            <p style={{ marginTop: '0.45rem', fontSize: '0.78rem', color: 'var(--color-text-light)' }}>
+              Public visitors do not register. Only office staff accounts can be created here.
+            </p>
           </div>
 
           {(form.role === 'employee' || form.role === 'admin') && (
@@ -160,8 +206,8 @@ export default function Register({ onLogin }) {
               </div>
               <p style={{ marginTop: '0.45rem', fontSize: '0.78rem', color: 'var(--color-text-light)' }}>
                 {form.role === 'admin'
-                  ? 'Administrator access is restricted and still requires approval after registration.'
-                  : 'Employee access is restricted and still requires administrator approval after registration.'}
+                  ? 'Administrator access is restricted, protected by the administrator access code, and requires approval from an active admin.'
+                  : 'Employee access is protected by the employee access code and becomes available after email verification.'}
               </p>
             </div>
           )}
@@ -191,9 +237,39 @@ export default function Register({ onLogin }) {
           </button>
         </form>
 
+        {form.role === 'admin' && (
+          <div style={{
+            marginTop: '1.25rem', padding: '0.9rem', borderRadius: '10px',
+            background: 'var(--color-surface-alt)', border: '1px solid var(--color-border-light)',
+            fontSize: '0.8rem', color: 'var(--color-text-light)', lineHeight: '1.55'
+          }}>
+            <strong style={{ color: 'var(--color-text)' }}>Admin Setup Notes</strong>
+            <div style={{ marginTop: '0.45rem' }}>Administrator registration is meant for trusted office owners or managers.</div>
+            <div>You must enter the correct administrator access code, then verify your email from the inbox message.</div>
+            <div>After verification, an existing active admin must approve your account before you can use `/admin/login`.</div>
+          </div>
+        )}
+
         <div className="auth-card__footer">
           Already have an account?{' '}
-          <Link to="/login">Sign In</Link>
+          <Link to={form.role === 'admin' ? '/admin/login' : '/employee/login'}>Sign In</Link>
+          <br />
+          <button
+            type="button"
+            onClick={handleResendVerification}
+            disabled={isResending}
+            style={{
+              marginTop: '0.6rem',
+              border: 'none',
+              background: 'none',
+              color: 'var(--color-accent)',
+              cursor: 'pointer',
+              fontSize: '0.9rem',
+              fontWeight: 600,
+            }}
+          >
+            {isResending ? 'Sending verification...' : 'Resend verification email'}
+          </button>
         </div>
       </div>
     </div>

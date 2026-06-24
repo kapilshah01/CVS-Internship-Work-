@@ -3,7 +3,6 @@ import { COMPANY } from '../data/siteData';
 import {
   dbGetUsers,
   dbUpdateUserStatus,
-  dbUpdateUserPassword,
   dbGetInvoices,
   dbUpdateInvoiceStatus,
   dbGetAppointments,
@@ -20,10 +19,6 @@ export default function AdminDashboard({ user }) {
   const [statusFilter, setStatusFilter] = useState('');
   const [userFilter, setUserFilter] = useState({ role: '', status: '', query: '' });
   const [appointmentFilter, setAppointmentFilter] = useState({ query: '', status: '', date: '' });
-  const [passwordResetTarget, setPasswordResetTarget] = useState(null);
-  const [passwordResetForm, setPasswordResetForm] = useState({ password: '', confirmPassword: '' });
-  const [passwordResetError, setPasswordResetError] = useState('');
-  const [passwordResetSuccess, setPasswordResetSuccess] = useState('');
 
   const loadData = async () => {
     const [fetchedUsers, fetchedInvoices, fetchedAppointments] = await Promise.all([
@@ -62,39 +57,6 @@ export default function AdminDashboard({ user }) {
 
   const handleDownloadInvoice = (invoice) => {
     downloadInvoiceDocument(invoice, COMPANY);
-  };
-
-  const openEmployeeReset = (member) => {
-    setPasswordResetTarget(member);
-    setPasswordResetForm({ password: '', confirmPassword: '' });
-    setPasswordResetError('');
-    setPasswordResetSuccess('');
-  };
-
-  const handleEmployeePasswordReset = async (e) => {
-    e.preventDefault();
-    setPasswordResetError('');
-
-    if (!passwordResetForm.password || !passwordResetForm.confirmPassword) {
-      setPasswordResetError('Please enter and confirm the new password.');
-      return;
-    }
-    if (passwordResetForm.password.length < 6) {
-      setPasswordResetError('Password must be at least 6 characters.');
-      return;
-    }
-    if (passwordResetForm.password !== passwordResetForm.confirmPassword) {
-      setPasswordResetError('Passwords do not match.');
-      return;
-    }
-
-    await dbUpdateUserPassword(passwordResetTarget.email, passwordResetForm.password);
-    await loadData();
-    setPasswordResetSuccess(`Password updated successfully for ${passwordResetTarget.name}.`);
-    setTimeout(() => {
-      setPasswordResetTarget(null);
-      setPasswordResetSuccess('');
-    }, 1600);
   };
 
   const filteredUsers = users.filter((member) => {
@@ -286,9 +248,6 @@ export default function AdminDashboard({ user }) {
                           {u.status === 'rejected' && (
                             <button className="btn btn--sm btn--outline" onClick={() => handleApproveUser(u.email)}>Re-activate</button>
                           )}
-                          {u.role === 'employee' && (
-                            <button className="btn btn--sm btn--outline" onClick={() => openEmployeeReset(u)}>Reset Password</button>
-                          )}
                           {u.email === user.email && (
                             <span style={{ fontSize: '0.8rem', color: 'var(--color-text-light)' }}>(You)</span>
                           )}
@@ -461,113 +420,6 @@ export default function AdminDashboard({ user }) {
         )}
       </div>
 
-      {passwordResetTarget && (
-        <div
-          className="modal-overlay"
-          onClick={() => setPasswordResetTarget(null)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 1000,
-            background: 'rgba(0,0,0,0.6)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '1rem',
-          }}
-        >
-          <div
-            className="modal-content"
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: 'var(--color-surface)',
-              width: '100%',
-              maxWidth: '460px',
-              borderRadius: '12px',
-              padding: '2rem',
-              boxShadow: 'var(--shadow-xl)',
-              border: '1px solid var(--color-border)',
-              position: 'relative',
-            }}
-          >
-            <button
-              onClick={() => setPasswordResetTarget(null)}
-              style={{
-                position: 'absolute',
-                top: '1rem',
-                right: '1rem',
-                background: 'none',
-                border: 'none',
-                fontSize: '1.25rem',
-                cursor: 'pointer',
-                color: 'var(--color-text-light)',
-              }}
-            >
-              X
-            </button>
-
-            <h3 style={{ fontFamily: 'var(--font-heading)', marginBottom: '0.5rem' }}>Reset Employee Password</h3>
-            <p style={{ color: 'var(--color-text-light)', fontSize: '0.85rem', marginBottom: '1rem' }}>
-              Reset password for <strong>{passwordResetTarget.name}</strong> ({passwordResetTarget.email}). Employees can only reset through the admin panel.
-            </p>
-
-            {passwordResetError && (
-              <div style={{
-                padding: '0.75rem', marginBottom: '1rem', borderRadius: '8px',
-                background: 'rgba(239,68,68,0.1)', color: '#EF4444', fontSize: '0.875rem',
-                border: '1px solid rgba(239,68,68,0.2)'
-              }}>
-                {passwordResetError}
-              </div>
-            )}
-
-            {passwordResetSuccess && (
-              <div style={{
-                padding: '0.75rem', marginBottom: '1rem', borderRadius: '8px',
-                background: 'rgba(16,185,129,0.1)', color: '#10B981', fontSize: '0.875rem',
-                border: '1px solid rgba(16,185,129,0.2)'
-              }}>
-                {passwordResetSuccess}
-              </div>
-            )}
-
-            <form onSubmit={handleEmployeePasswordReset}>
-              <div className="form-group">
-                <label className="form-label" htmlFor="employee-reset-password">New Password</label>
-                <input
-                  className="form-input"
-                  id="employee-reset-password"
-                  type="password"
-                  value={passwordResetForm.password}
-                  onChange={(e) => setPasswordResetForm({ ...passwordResetForm, password: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label" htmlFor="employee-reset-confirm">Confirm Password</label>
-                <input
-                  className="form-input"
-                  id="employee-reset-confirm"
-                  type="password"
-                  value={passwordResetForm.confirmPassword}
-                  onChange={(e) => setPasswordResetForm({ ...passwordResetForm, confirmPassword: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
-                <button type="button" className="btn btn--outline" onClick={() => setPasswordResetTarget(null)}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn--primary">
-                  Save New Password
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

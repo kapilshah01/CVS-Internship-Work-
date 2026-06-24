@@ -9,10 +9,10 @@ export const COMPANY = {
   description:
     'China Visa Service Consultancy Pvt. Ltd. has been a trusted name in visa processing services since 2066 B.S., helping individuals and businesses complete their travel documentation smoothly and confidently.',
   foundedYear: '2066 B.S.',
-  phone: '+977-01-4XXXXXX',
+  phone: '9851014899',
   email: 'info@chinavisaservice.com.np',
   whatsapp: '+977 985-1014899',
-  address: 'Kathmandu, Nepal',
+  address: 'Hattisar, Kathmandu',
   officeHours: 'Sun–Fri: 10:00 AM – 5:00 PM',
 };
 
@@ -21,6 +21,7 @@ export const NAV_LINKS = [
   { label: 'Countries', href: '#countries' },
   { label: 'Services', href: '#services' },
   { label: 'Appointment', href: '#appointment' },
+  { label: 'FAQ', href: '#faq' },
   { label: 'About', href: '#about' },
   { label: 'Contact', href: '#contact' },
 ];
@@ -296,7 +297,7 @@ export const FAQS = [
   {
     question: 'Can I track my visa application status?',
     answer:
-      'Yes, we provide regular updates on your visa application status via phone and email. Our customer portal also allows you to check the real-time status of your application.',
+      'Yes, we provide regular updates on your visa application status via phone and email. You can also contact our office directly anytime for the latest update on your file.',
   },
   {
     question: 'What are your office hours?',
@@ -329,8 +330,8 @@ export const CHATBOT_RESPONSES = {
     document: "Required documents vary by visa type and country. Generally, you'll need: valid passport, photos, application form, and supporting documents. Visit our office for a personalized document checklist.",
     cost: "Our service fees vary by visa type and processing speed. We maintain complete transparency — contact us for a detailed fee breakdown. No hidden charges!",
     time: "Standard processing takes 4-5 working days. Express processing (1-2 days) is available at additional cost. Processing times may vary based on the embassy workload.",
-    office: "Our office is located in Kathmandu, Nepal. We're open Sunday through Friday, 10:00 AM to 5:00 PM. You can also reach us via WhatsApp for urgent inquiries.",
-    track: "You can track your application status through our customer portal or by contacting our office. We provide regular updates via phone and email.",
+    office: "Our office is located in Hattisar, Kathmandu. We're open Sunday through Friday, 10:00 AM to 5:00 PM. You can also reach us via WhatsApp for urgent inquiries.",
+    track: "You can track your application status by contacting our office. We also provide regular updates via phone and email.",
     hello: "Hello! Welcome to China Visa Service Consultancy. How can I assist you today?",
     hi: "Hi there! Welcome to China Visa Service Consultancy. How can I help you with your visa needs?",
     thanks: "You're welcome! If you have any more questions, feel free to ask. We're here to help!",

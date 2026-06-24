@@ -16,6 +16,7 @@ export default function CustomerDashboard({ user }) {
   const [apptNotes, setApptNotes] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [bookingLoading, setBookingLoading] = useState(false);
 
   const loadDashboardData = async () => {
     const allInvoices = await dbGetInvoices();
@@ -39,13 +40,23 @@ export default function CustomerDashboard({ user }) {
     loadDashboardData();
   }, [user]);
 
-  const applications = [
-    { id: 'APP-001', country: 'China', visaType: 'Tourist (L)', status: 'Processing', submitted: '2081-03-01', updated: '2081-03-10' },
-    { id: 'APP-002', country: 'Japan', visaType: 'Business', status: 'Approved', submitted: '2081-02-15', updated: '2081-02-28' },
-  ];
+  const applications = invoices.map((invoice) => ({
+    id: invoice.id,
+    country: invoice.country,
+    visaType: invoice.visaType,
+    submitted: invoice.issueDate || invoice.date,
+    updated: invoice.dueDate || invoice.date,
+    status:
+      invoice.status === 'paid'
+        ? 'Approved'
+        : invoice.status === 'draft'
+          ? 'Draft'
+          : 'Processing',
+  }));
 
   const handleBookAppointment = async (e) => {
     e.preventDefault();
+    if (bookingLoading) return;
     setSuccessMsg('');
     setErrorMsg('');
 
@@ -61,21 +72,29 @@ export default function CustomerDashboard({ user }) {
       return;
     }
 
-    await dbAddAppointment({
-      clientName: user.name,
-      email: user.email,
-      date: apptDate,
-      time: apptTime,
-      purpose: apptPurpose,
-      notes: apptNotes,
-      country: 'China',
-      visaType: apptPurpose,
-    });
+    setBookingLoading(true);
 
-    setSuccessMsg('Your appointment slot has been scheduled successfully!');
-    setApptDate('');
-    setApptNotes('');
-    loadDashboardData();
+    try {
+      await dbAddAppointment({
+        clientName: user.name,
+        email: user.email,
+        date: apptDate,
+        time: apptTime,
+        purpose: apptPurpose,
+        notes: apptNotes,
+        country: 'China',
+        visaType: apptPurpose,
+      });
+
+      setSuccessMsg('Your appointment slot has been scheduled successfully!');
+      setApptDate('');
+      setApptNotes('');
+      await loadDashboardData();
+    } catch (error) {
+      setErrorMsg(error.message || 'Failed to book appointment. Please try again.');
+    } finally {
+      setBookingLoading(false);
+    }
   };
 
   const getTodayString = () => {
@@ -145,16 +164,20 @@ export default function CustomerDashboard({ user }) {
                   <tr><th>Application #</th><th>Country</th><th>Visa Type</th><th>Submitted</th><th>Last Updated</th><th>Status</th></tr>
                 </thead>
                 <tbody>
-                  {applications.map((app) => (
-                    <tr key={app.id}>
-                      <td><strong>{app.id}</strong></td>
-                      <td>{app.country}</td>
-                      <td>{app.visaType}</td>
-                      <td>{app.submitted}</td>
-                      <td>{app.updated}</td>
-                      <td><span className={`status-badge ${app.status === 'Approved' ? 'status-badge--paid' : 'status-badge--pending'}`}>{app.status}</span></td>
-                    </tr>
-                  ))}
+                  {applications.length === 0 ? (
+                    <tr><td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: 'var(--color-text-light)' }}>No live application records found yet.</td></tr>
+                  ) : (
+                    applications.map((app) => (
+                      <tr key={app.id}>
+                        <td><strong>{app.id}</strong></td>
+                        <td>{app.country}</td>
+                        <td>{app.visaType}</td>
+                        <td>{app.submitted}</td>
+                        <td>{app.updated}</td>
+                        <td><span className={`status-badge ${app.status === 'Approved' ? 'status-badge--paid' : 'status-badge--pending'}`}>{app.status}</span></td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -251,7 +274,9 @@ export default function CustomerDashboard({ user }) {
                   <textarea className="form-textarea" placeholder="Provide any additional details or requirements..." value={apptNotes} onChange={(e) => setApptNotes(e.target.value)} style={{ minHeight: '80px' }}></textarea>
                 </div>
 
-                <button type="submit" className="btn btn--primary btn--lg" style={{ width: '100%' }}>Book Appointment</button>
+                <button type="submit" className={`btn btn--primary btn--lg ${bookingLoading ? 'btn--loading' : ''}`} style={{ width: '100%' }} disabled={bookingLoading}>
+                  {bookingLoading ? 'Booking...' : 'Book Appointment'}
+                </button>
               </form>
             </div>
 
@@ -328,7 +353,7 @@ export default function CustomerDashboard({ user }) {
                 <div style={{ flex: 1 }}>
                   <h2 style={{ fontFamily: 'var(--font-heading)', color: 'var(--color-primary)', margin: 0, fontSize: '1.75rem' }}>PRO FORMA INVOICE</h2>
                   <p style={{ fontSize: '0.85rem', color: '#6B7280', margin: '0.2rem 0' }}>{COMPANY.name}</p>
-                  <p style={{ fontSize: '0.8rem', color: '#9CA3AF', margin: 0 }}>Kathmandu, Nepal | {COMPANY.email}</p>
+                  <p style={{ fontSize: '0.8rem', color: '#9CA3AF', margin: 0 }}>Hattisar, Kathmandu | {COMPANY.email}</p>
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <h3 style={{ margin: 0, color: 'var(--color-accent)' }}>{selectedInvoice.id}</h3>

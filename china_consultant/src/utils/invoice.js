@@ -6,22 +6,20 @@ export const createDefaultServiceItem = (overrides = {}) => ({
   ...overrides,
 });
 
-export const calculateInvoiceTotals = (serviceItems = [], discount = 0, taxRate = 0) => {
+export const calculateInvoiceTotals = (serviceItems = [], taxRate = 0) => {
   const subtotal = serviceItems.reduce((sum, item) => {
     const quantity = Number(item.quantity) || 0;
     const unitPrice = Number(item.unitPrice) || 0;
     return sum + quantity * unitPrice;
   }, 0);
 
-  const safeDiscount = Number(discount) || 0;
-  const taxableBase = Math.max(0, subtotal - safeDiscount);
   const safeTaxRate = Number(taxRate) || 0;
-  const taxAmount = taxableBase * (safeTaxRate / 100);
-  const total = taxableBase + taxAmount;
+  const taxAmount = subtotal * (safeTaxRate / 100);
+  const total = subtotal + taxAmount;
 
   return {
     subtotal,
-    discount: safeDiscount,
+    discount: 0,
     taxRate: safeTaxRate,
     taxAmount,
     total,
@@ -45,22 +43,26 @@ export const normalizeInvoice = (invoice) => {
         }),
       ];
 
-  const totals = calculateInvoiceTotals(
-    baseItems,
-    invoice.discount ?? 0,
-    invoice.taxRate ?? 0
-  );
+  const totals = calculateInvoiceTotals(baseItems, invoice.taxRate ?? 0);
 
   return {
     ...invoice,
     serviceItems: baseItems,
+    invoiceMode: invoice.invoiceMode || 'personal',
+    passportList: Array.isArray(invoice.passportList)
+      ? invoice.passportList
+      : String(invoice.passport || '')
+          .split(/[\n,]+/)
+          .map((value) => value.trim())
+          .filter(Boolean),
+    travelerCount: Number(invoice.travelerCount) || 1,
     issueDate: invoice.issueDate || invoice.date,
     dueDate: invoice.dueDate || invoice.date,
     paymentTerms: invoice.paymentTerms || 'Payment due before document submission.',
     paymentMethod: invoice.paymentMethod || 'Cash / Bank Transfer',
     currency: invoice.currency || 'NPR',
     subtotal: invoice.subtotal ?? totals.subtotal,
-    discount: invoice.discount ?? totals.discount,
+    discount: 0,
     taxRate: invoice.taxRate ?? totals.taxRate,
     taxAmount: invoice.taxAmount ?? totals.taxAmount,
     total: invoice.total ?? totals.total,
@@ -249,7 +251,11 @@ export const createInvoiceDocumentHtml = (invoice, company = {}) => {
         <div class="card">
           <p class="label">BILL TO</p>
           <p class="item"><strong>Client:</strong> ${escapeHtml(normalized.client)}</p>
+          <p class="item"><strong>Invoice Type:</strong> ${escapeHtml(normalized.invoiceMode === 'group' ? 'Group' : 'Personal')}</p>
           <p class="item"><strong>Passport:</strong> ${escapeHtml(normalized.passport)}</p>
+          ${normalized.invoiceMode === 'group'
+            ? `<p class="item"><strong>Travelers:</strong> ${escapeHtml(String(normalized.travelerCount || normalized.passportList?.length || 1))}</p>`
+            : ''}
           <p class="item"><strong>Email:</strong> ${escapeHtml(normalized.email || 'N/A')}</p>
         </div>
         <div class="card">
@@ -276,13 +282,15 @@ export const createInvoiceDocumentHtml = (invoice, company = {}) => {
 
       <div class="summary">
         <div class="summary-row"><span>Subtotal</span><span>${escapeHtml(formatCurrency(normalized.subtotal, normalized.currency))}</span></div>
-        <div class="summary-row"><span>Discount</span><span>${escapeHtml(formatCurrency(normalized.discount, normalized.currency))}</span></div>
         <div class="summary-row"><span>Tax (${normalized.taxRate || 0}%)</span><span>${escapeHtml(formatCurrency(normalized.taxAmount, normalized.currency))}</span></div>
         <div class="summary-row"><span>Grand Total</span><span>${escapeHtml(formatCurrency(normalized.total ?? normalized.amount, normalized.currency))}</span></div>
       </div>
 
       <div class="notes">
         <p><strong>Payment Terms:</strong> ${escapeHtml(normalized.paymentTerms || 'Payment due before document submission.')}</p>
+        ${normalized.invoiceMode === 'group' && normalized.passportList?.length
+          ? `<p><strong>Passport Group:</strong> ${escapeHtml(normalized.passportList.join(', '))}</p>`
+          : ''}
         <p><strong>Notes:</strong> ${escapeHtml(normalized.notes || 'Please verify all client details before submission.')}</p>
       </div>
 

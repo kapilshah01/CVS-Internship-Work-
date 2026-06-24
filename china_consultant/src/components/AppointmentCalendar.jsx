@@ -107,6 +107,7 @@ export default function AppointmentCalendar() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitStatus === 'submitting') return;
     setSubmitStatus('submitting');
 
     const appointment = {
@@ -141,7 +142,7 @@ export default function AppointmentCalendar() {
       }, 2500);
     } catch (error) {
       console.error('Booking error:', error);
-      setSubmitStatus('error');
+      setSubmitStatus(error?.message || 'error');
     }
   };
 
@@ -481,8 +482,10 @@ export default function AppointmentCalendar() {
                         </button>
                       </div>
 
-                      {submitStatus === 'error' && (
-                        <p className="form-error">Failed to book appointment. Please try again.</p>
+                      {submitStatus && submitStatus !== 'success' && submitStatus !== 'submitting' && (
+                        <p className="form-error">
+                          {submitStatus === 'error' ? 'Failed to book appointment. Please try again.' : submitStatus}
+                        </p>
                       )}
                     </form>
                   )}

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import ScrollReveal, { RevealItem } from '../components/ScrollReveal';
 import AppointmentCalendar from '../components/AppointmentCalendar';
 import {
-  COMPANY, TRUST_STATS, COUNTRIES, CITIES, SERVICES,
+  COMPANY, TRUST_STATS, COUNTRIES, SERVICES,
   PROCESS_STEPS, WHY_CHOOSE_US, TEAM_MEMBERS, MILESTONES,
   TESTIMONIALS, FAQS, GALLERY_IMAGES,
 } from '../data/siteData';
@@ -174,43 +174,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== 4. FEATURED CITIES ===== */}
-      <section id="cities" className="section" aria-labelledby="cities-title">
-        <div className="container">
-          <ScrollReveal>
-            <div className="section__header">
-              <span className="section__label">Explore</span>
-              <h2 id="cities-title" className="section__title">Featured Cities</h2>
-              <p className="section__subtitle">
-                Discover the stunning cities you can visit with our visa services.
-              </p>
-              <div className="gold-line"></div>
-            </div>
-          </ScrollReveal>
-
-          <div className="cities-grid">
-            {CITIES.map((city, i) => (
-              <ScrollReveal key={city.id} delay={i * 0.08} variant="zoomIn">
-                <div className="city-card">
-                  <img
-                    src={city.image}
-                    alt={`${city.name}, ${city.country}`}
-                    className="city-card__image"
-                    loading="lazy"
-                  />
-                  <div className="city-card__overlay">
-                    <h3 className="city-card__name">{city.name}</h3>
-                    <span className="city-card__country">{city.country}</span>
-                    <p className="city-card__desc">{city.description}</p>
-                  </div>
-                </div>
-              </ScrollReveal>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ===== 5. VISA SERVICES ===== */}
+      {/* ===== 4. VISA SERVICES ===== */}
       <section id="services" className="section section--alt" aria-labelledby="services-title">
         <div className="container">
           <ScrollReveal>
@@ -238,7 +202,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== 6. HOW IT WORKS ===== */}
+      {/* ===== 5. HOW IT WORKS ===== */}
       <section id="process" className="section" aria-labelledby="process-title">
         <div className="container">
           <ScrollReveal>
@@ -268,10 +232,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== 7. APPOINTMENT CALENDAR ===== */}
+      {/* ===== 6. APPOINTMENT CALENDAR ===== */}
       <AppointmentCalendar />
 
-      {/* ===== 8. WHY CHOOSE US ===== */}
+      {/* ===== 7. WHY CHOOSE US ===== */}
       <section className="section section--dark" aria-labelledby="why-title">
         <div className="container">
           <ScrollReveal>
@@ -299,7 +263,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== 9. FOUNDER MESSAGE ===== */}
+      {/* ===== 8. FOUNDER MESSAGE ===== */}
       <section id="about" className="section" aria-labelledby="founder-title">
         <div className="container">
           <ScrollReveal>
@@ -329,7 +293,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== 10. PROFESSIONAL TEAM ===== */}
+      {/* ===== 9. PROFESSIONAL TEAM ===== */}
       <section className="section section--alt" aria-labelledby="team-title">
         <div className="container">
           <ScrollReveal>
@@ -360,7 +324,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== 11. COMPANY JOURNEY ===== */}
+      {/* ===== 10. COMPANY JOURNEY ===== */}
       <section className="section" aria-labelledby="journey-title">
         <div className="container">
           <ScrollReveal>
@@ -388,7 +352,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== 12. DESTINATION GALLERY ===== */}
+      {/* ===== 11. DESTINATION GALLERY ===== */}
       <section id="gallery" className="section section--alt" aria-labelledby="gallery-title">
         <div className="container">
           <ScrollReveal>
@@ -420,7 +384,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== 13. TESTIMONIALS ===== */}
+      {/* ===== 12. TESTIMONIALS ===== */}
       <section className="section" aria-labelledby="testimonials-title">
         <div className="container">
           <ScrollReveal>
@@ -458,8 +422,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== 14. FAQ ===== */}
-      <section className="section section--alt" aria-labelledby="faq-title">
+      {/* ===== 13. FAQ ===== */}
+      <section id="faq" className="section section--alt" aria-labelledby="faq-title">
         <div className="container">
           <ScrollReveal>
             <div className="section__header">
@@ -494,7 +458,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== 15. CONTACT ===== */}
+      {/* ===== 14. CONTACT ===== */}
       <section id="contact" className="section" aria-labelledby="contact-title">
         <div className="container">
           <ScrollReveal>
@@ -541,40 +505,15 @@ export default function Home() {
                 </div>
 
                 <div className="contact-map">
-                  📍 Google Maps will be embedded here with the office location
+                  <iframe
+                    className="contact-map__frame"
+                    title="China Visa Service office location"
+                    src={`https://www.google.com/maps?q=${encodeURIComponent(COMPANY.address)}&z=16&output=embed`}
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                  />
                 </div>
               </div>
-
-              <form className="contact-form" onSubmit={(e) => e.preventDefault()}>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="contact-name">Full Name</label>
-                  <input className="form-input" id="contact-name" type="text" placeholder="Enter your full name" required />
-                </div>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="contact-email">Email Address</label>
-                  <input className="form-input" id="contact-email" type="email" placeholder="Enter your email" required />
-                </div>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="contact-phone">Phone Number</label>
-                  <input className="form-input" id="contact-phone" type="tel" placeholder="Enter your phone number" />
-                </div>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="contact-country">Country of Interest</label>
-                  <select className="form-select" id="contact-country">
-                    <option value="">Select a country</option>
-                    <option value="china">China</option>
-                    <option value="japan">Japan</option>
-                    <option value="south-korea">South Korea</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="contact-message">Message</label>
-                  <textarea className="form-textarea" id="contact-message" placeholder="Tell us about your visa requirements..." required></textarea>
-                </div>
-                <button type="submit" className="btn btn--primary btn--lg" style={{ width: '100%' }}>
-                  Send Inquiry
-                </button>
-              </form>
             </div>
           </ScrollReveal>
         </div>

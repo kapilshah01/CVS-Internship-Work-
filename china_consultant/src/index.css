@@ -59,7 +59,7 @@
   --space-2xl: 3rem;
   --space-3xl: 4rem;
   --space-4xl: 6rem;
-  --space-section: clamp(4rem, 8vw, 7rem);
+  --space-section: clamp(3.25rem, 6vw, 5.5rem);
   --container-max: 1280px;
   --container-narrow: 900px;
 
@@ -131,7 +131,7 @@
 }
 
 html {
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
   scroll-padding-top: var(--navbar-height);
   -webkit-text-size-adjust: 100%;
 }
@@ -1342,44 +1342,62 @@ h1, h2, h3, h4, h5, h6 {
 /* ---------- Contact ---------- */
 .contact-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-3xl);
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+#contact .section__header {
+  margin-bottom: 2rem;
 }
 
 .contact-info {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xl);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
 }
 
 .contact-item {
   display: flex;
   align-items: flex-start;
-  gap: var(--space-md);
+  gap: 0.75rem;
+  padding: 0.9rem 0.95rem;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-light);
+  box-shadow: var(--shadow-sm);
+  min-width: 0;
+}
+
+.contact-item > div:last-child {
+  min-width: 0;
 }
 
 .contact-item__icon {
-  width: 48px;
-  height: 48px;
-  min-width: 48px;
-  border-radius: var(--radius-md);
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 14px;
   background: linear-gradient(135deg, rgba(201,168,76,0.1), rgba(201,168,76,0.05));
   border: 1px solid rgba(201,168,76,0.2);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
+  font-size: 1.05rem;
 }
 
 .contact-item__label {
   font-weight: var(--fw-semibold);
-  margin-bottom: 0.15rem;
-  font-size: var(--fs-body);
+  margin-bottom: 0.1rem;
+  font-size: 0.88rem;
+  line-height: 1.3;
 }
 
 .contact-item__text {
-  font-size: var(--fs-small);
+  font-size: 0.82rem;
+  line-height: 1.4;
   color: var(--color-text-light);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .contact-form {
@@ -1391,16 +1409,19 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .contact-map {
-  margin-top: var(--space-2xl);
-  height: 260px;
+  grid-column: 1 / -1;
+  height: 220px;
   border-radius: var(--radius-lg);
   background: var(--color-surface-alt);
   border: 1px solid var(--color-border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-text-light);
-  font-size: var(--fs-small);
+  overflow: hidden;
+}
+
+.contact-map__frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
 }
 
 /* ---------- Footer ---------- */
@@ -1498,7 +1519,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .floating-contact--whatsapp {
-  bottom: 94px;
+  bottom: 104px;
   z-index: var(--z-whatsapp);
 }
 
@@ -2378,6 +2399,7 @@ h1, h2, h3, h4, h5, h6 {
   .journey-timeline { grid-template-columns: repeat(2, 1fr); }
   .testimonials-grid { grid-template-columns: 1fr; }
   .contact-grid { grid-template-columns: 1fr; }
+  .contact-info { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .gallery-grid { columns: 2; }
   .footer__grid { grid-template-columns: repeat(2, 1fr); }
   .founder { grid-template-columns: 1fr; text-align: center; }
@@ -2403,6 +2425,7 @@ h1, h2, h3, h4, h5, h6 {
   .features-grid { grid-template-columns: 1fr; }
   .team-grid { grid-template-columns: 1fr; }
   .journey-timeline { grid-template-columns: 1fr; }
+  .contact-info { grid-template-columns: 1fr; }
   .gallery-grid { columns: 1; }
   .footer__grid { grid-template-columns: 1fr; }
   .dashboard__stats { grid-template-columns: 1fr; }
@@ -2922,7 +2945,150 @@ h1, h2, h3, h4, h5, h6 {
     flex-direction: column;
   }
   
-  .form-actions .btn {
+.form-actions .btn {
     width: 100%;
+  }
+}
+
+/* ============================================
+   Admin Workspace
+   ============================================ */
+.admin-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  background: var(--color-surface-alt);
+}
+
+.admin-sidebar {
+  background: linear-gradient(180deg, #0a1628 0%, #14233b 100%);
+  color: #fff;
+  padding: 1.5rem 1rem;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  border-right: 1px solid rgba(255,255,255,0.08);
+}
+
+.admin-sidebar__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin-bottom: 2rem;
+}
+
+.admin-sidebar__brand p {
+  margin: 0.15rem 0 0;
+  color: rgba(255,255,255,0.7);
+  font-size: 0.82rem;
+}
+
+.admin-sidebar__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.admin-sidebar__link {
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  color: rgba(255,255,255,0.8);
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.admin-sidebar__link:hover,
+.admin-sidebar__link--active {
+  background: rgba(201,168,76,0.16);
+  color: #fff;
+}
+
+.admin-shell__main {
+  min-width: 0;
+}
+
+.admin-shell__content {
+  padding: 1.5rem;
+}
+
+.admin-navbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--color-border-light);
+  background: var(--color-surface);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.admin-navbar__eyebrow {
+  margin: 0 0 0.25rem;
+  color: var(--color-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.admin-navbar__title {
+  margin: 0;
+  font-size: clamp(1.6rem, 2vw, 2.2rem);
+}
+
+.admin-navbar__subtitle {
+  margin: 0.35rem 0 0;
+  color: var(--color-text-light);
+}
+
+.admin-navbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.admin-navbar__user {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  min-width: 180px;
+}
+
+.admin-navbar__user span {
+  color: var(--color-text-light);
+  font-size: 0.82rem;
+}
+
+@media (max-width: 1024px) {
+  .admin-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-sidebar {
+    position: static;
+    height: auto;
+  }
+
+  .admin-sidebar__nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-shell__content,
+  .admin-navbar {
+    padding: 1rem;
+  }
+
+  .admin-navbar {
+    flex-direction: column;
+  }
+
+  .admin-navbar__user {
+    align-items: flex-start;
   }
 }

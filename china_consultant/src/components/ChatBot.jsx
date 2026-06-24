@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CHATBOT_RESPONSES, COMPANY, FAQS } from '../data/siteData';
+import { scrollToElement } from '../utils/scroll';
 
 const STORAGE_KEY = 'cvs-chatbot-state';
 
@@ -248,7 +249,8 @@ export default function ChatBot() {
 
     const target = document.querySelector(action.target);
     if (target) {
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const navbarHeight = document.querySelector('.navbar')?.offsetHeight ?? 72;
+      scrollToElement(target, { duration: 280, offset: navbarHeight });
       setOpen(false);
     } else {
       setInput(action.label);
