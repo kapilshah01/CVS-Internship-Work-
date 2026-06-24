@@ -3,6 +3,22 @@ import { buildLikeQuery, handleSupabaseResult } from './_helpers';
 
 const TABLE = 'service_catalog';
 
+function dedupeServices(rows = []) {
+  const seen = new Set();
+  return rows.filter((row) => {
+    const key = String(row.title || '')
+      .trim()
+      .toLowerCase();
+
+    if (!key || seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+    return true;
+  });
+}
+
 export const serviceCatalogService = {
   async create(payload) {
     const supabase = requireSupabase();
@@ -28,7 +44,8 @@ export const serviceCatalogService = {
       const term = buildLikeQuery(filters.search);
       query = query.or(`title.ilike.${term},description.ilike.${term}`);
     }
-    return handleSupabaseResult(await query, 'Failed to fetch services.');
+    const rows = handleSupabaseResult(await query, 'Failed to fetch services.');
+    return dedupeServices(rows);
   },
   async getById(id) {
     const supabase = requireSupabase();

@@ -73,9 +73,9 @@ export const normalizeInvoice = (invoice) => {
 export const formatCurrency = (amount, currency = 'NPR') => {
   const value = Number(amount) || 0;
   if (currency === 'NPR') {
-    return `Rs. ${value.toLocaleString()}`;
+    return `Rs.\u00A0${value.toLocaleString()}`;
   }
-  return `${currency} ${value.toLocaleString()}`;
+  return `${currency}\u00A0${value.toLocaleString()}`;
 };
 
 const escapeHtml = (value = '') => String(value)
@@ -104,122 +104,161 @@ export const createInvoiceDocumentHtml = (invoice, company = {}) => {
   <title>${escapeHtml(normalized.id)} - Invoice</title>
   <style>
     :root {
-      --primary: #0a4a72;
-      --accent: #c89b3c;
-      --muted: #6b7280;
-      --border: #dbe3ea;
-      --soft: #f8fafc;
-      --text: #111827;
+      --primary: #1d7df2;
+      --primary-deep: #0f5fc4;
+      --primary-soft: #dfefff;
+      --muted: #4a5d78;
+      --border: #bfdcff;
+      --soft: #eef6ff;
+      --text: #111111;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      padding: 32px;
+      padding: 10mm;
       font-family: Arial, Helvetica, sans-serif;
-      background: #eef3f7;
+      background: #ffffff;
       color: var(--text);
     }
     .invoice {
-      max-width: 960px;
+      width: 148mm;
       margin: 0 auto;
-      background: #ffffff;
+      background: linear-gradient(180deg, #ffffff 0%, #fefeff 100%);
       border: 1px solid var(--border);
-      border-radius: 18px;
+      border-radius: 14px;
       overflow: hidden;
-      box-shadow: 0 20px 60px rgba(15, 23, 42, 0.08);
+      box-shadow: none;
     }
     .hero {
       display: flex;
       justify-content: space-between;
       gap: 24px;
-      padding: 32px;
-      background: linear-gradient(135deg, #0a1628 0%, var(--primary) 100%);
-      color: #ffffff;
+      padding: 18px 20px 16px;
+      background:
+        radial-gradient(circle at top right, rgba(29, 125, 242, 0.24) 0%, rgba(29, 125, 242, 0) 30%),
+        linear-gradient(135deg, #e7f3ff 0%, #ffffff 48%, #dcedff 100%);
+      color: #111111;
+      border-bottom: 2px solid rgba(29, 125, 242, 0.38);
+      position: relative;
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      left: 20px;
+      right: 20px;
+      bottom: 0;
+      height: 1px;
+      background: linear-gradient(90deg, rgba(29,125,242,0.14), rgba(29,125,242,0.72), rgba(29,125,242,0.14));
     }
     .hero h1, .hero h2, .hero p { margin: 0; }
-    .hero h1 { font-size: 30px; margin-bottom: 6px; }
-    .hero h2 { font-size: 24px; color: #f7d995; }
-    .hero p { margin-top: 4px; opacity: 0.9; }
-    .content { padding: 32px; }
+    .hero h1 { font-size: 20px; margin-bottom: 6px; }
+    .hero h2 { font-size: 18px; color: var(--primary-deep); }
+    .hero p { margin-top: 4px; }
+    .content { padding: 16px 18px 18px; }
     .grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 20px;
-      margin-bottom: 28px;
+      gap: 14px;
+      margin-bottom: 18px;
     }
     .card {
-      background: var(--soft);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(238,246,255,0.98) 100%);
       border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 18px;
+      border-radius: 12px;
+      padding: 12px 13px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.72);
     }
     .label {
-      margin: 0 0 12px;
+      margin: 0 0 10px;
       font-size: 12px;
       font-weight: 700;
       letter-spacing: 0.08em;
-      color: var(--primary);
+      color: var(--primary-deep);
+      padding-bottom: 6px;
+      border-bottom: 1px solid rgba(15,95,215,0.12);
     }
     .item {
-      margin: 6px 0;
-      font-size: 14px;
+      margin: 5px 0;
+      font-size: 12px;
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 20px;
+      margin-bottom: 14px;
     }
     th, td {
-      padding: 14px 12px;
+      padding: 10px 8px;
       border-bottom: 1px solid var(--border);
-      font-size: 14px;
+      font-size: 12px;
       vertical-align: top;
     }
     th {
-      background: #f3f6f9;
+      background: linear-gradient(180deg, #edf6ff 0%, #dcebff 100%);
       text-align: left;
-      color: var(--primary);
+      color: var(--primary-deep);
     }
     .right { text-align: right; }
     .center { text-align: center; }
     .strong { font-weight: 700; }
     .summary {
-      width: min(360px, 100%);
+      width: min(280px, 100%);
       margin-left: auto;
       border: 1px solid var(--border);
-      border-radius: 14px;
+      border-radius: 12px;
       overflow: hidden;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.55), 0 14px 32px rgba(29,125,242,0.1);
     }
     .summary-row {
       display: grid;
       grid-template-columns: 1fr auto;
       gap: 12px;
-      padding: 12px 16px;
+      padding: 9px 12px;
       border-bottom: 1px solid var(--border);
-      background: #ffffff;
-      font-size: 14px;
+      background: linear-gradient(180deg, #ffffff 0%, #f4f9ff 100%);
+      font-size: 12px;
     }
     .summary-row:last-child {
       border-bottom: 0;
-      background: #f8fbff;
-      color: var(--primary);
+      background: linear-gradient(135deg, rgba(29,125,242,0.28) 0%, rgba(29,125,242,0.14) 100%);
+      color: var(--primary-deep);
       font-weight: 700;
-      font-size: 16px;
-    }
-    .notes {
-      margin-top: 24px;
-      padding: 16px 18px;
-      background: #fff9ed;
-      border: 1px solid #f0dfb2;
-      border-radius: 14px;
       font-size: 14px;
     }
+    .notes {
+      margin-top: 16px;
+      padding: 12px;
+      background: linear-gradient(180deg, #ffffff 0%, #f3f9ff 100%);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 12px;
+    }
     .footer {
-      margin-top: 28px;
+      margin-top: 16px;
+      padding: 12px 14px;
+      background: linear-gradient(135deg, rgba(29,125,242,0.08) 0%, rgba(29,125,242,0.14) 100%);
+      border: 1px solid rgba(29,125,242,0.22);
+      border-radius: 12px;
       color: var(--muted);
-      font-size: 13px;
+      font-size: 11px;
+      line-height: 1.6;
+    }
+    .footer ul {
+      margin: 6px 0 0 18px;
+      padding: 0;
+    }
+    .pickup-note {
+      margin-top: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--primary-deep);
+      padding: 12px;
+      text-align: center;
+      background: linear-gradient(135deg, rgba(29,125,242,0.12) 0%, rgba(29,125,242,0.2) 100%);
+      border-radius: 12px;
     }
     @media print {
+      @page { size: A5 portrait; margin: 8mm; }
       body { padding: 0; background: #fff; }
       .invoice { border: 0; border-radius: 0; box-shadow: none; }
     }
@@ -240,7 +279,7 @@ export const createInvoiceDocumentHtml = (invoice, company = {}) => {
       </div>
       <div>
         <h2>Performa Invoice</h2>
-        <p><strong>ID:</strong> ${escapeHtml(normalized.id)}</p>
+        <p><strong>PI Number:</strong> ${escapeHtml(normalized.id)}</p>
         <p><strong>Issue Date:</strong> ${escapeHtml(normalized.issueDate || normalized.date || '')}</p>
         <p><strong>Due Date:</strong> ${escapeHtml(normalized.dueDate || normalized.date || '')}</p>
         <p><strong>Status:</strong> ${escapeHtml(normalized.status || 'pending')}</p>
@@ -252,7 +291,7 @@ export const createInvoiceDocumentHtml = (invoice, company = {}) => {
           <p class="label">BILL TO</p>
           <p class="item"><strong>Client:</strong> ${escapeHtml(normalized.client)}</p>
           <p class="item"><strong>Invoice Type:</strong> ${escapeHtml(normalized.invoiceMode === 'group' ? 'Group' : 'Personal')}</p>
-          <p class="item"><strong>Passport:</strong> ${escapeHtml(normalized.passport)}</p>
+          <p class="item"><strong>Passport / Permit Number:</strong> ${escapeHtml(normalized.passport)}</p>
           ${normalized.invoiceMode === 'group'
             ? `<p class="item"><strong>Travelers:</strong> ${escapeHtml(String(normalized.travelerCount || normalized.passportList?.length || 1))}</p>`
             : ''}
@@ -282,7 +321,9 @@ export const createInvoiceDocumentHtml = (invoice, company = {}) => {
 
       <div class="summary">
         <div class="summary-row"><span>Subtotal</span><span>${escapeHtml(formatCurrency(normalized.subtotal, normalized.currency))}</span></div>
-        <div class="summary-row"><span>Tax (${normalized.taxRate || 0}%)</span><span>${escapeHtml(formatCurrency(normalized.taxAmount, normalized.currency))}</span></div>
+        ${Number(normalized.taxRate || 0) > 0 || Number(normalized.taxAmount || 0) > 0
+          ? `<div class="summary-row"><span>Tax</span><span>${escapeHtml(formatCurrency(normalized.taxAmount, normalized.currency))}</span></div>`
+          : ''}
         <div class="summary-row"><span>Grand Total</span><span>${escapeHtml(formatCurrency(normalized.total ?? normalized.amount, normalized.currency))}</span></div>
       </div>
 
@@ -295,7 +336,18 @@ export const createInvoiceDocumentHtml = (invoice, company = {}) => {
       </div>
 
       <div class="footer">
-        <strong>Disclaimer:</strong> This is not VAT invoice, 13% VAT applicable on our services.
+        <strong>Disclaimer:</strong>
+        <ul>
+          <li>This document is a Proforma Invoice only and not a Tax Invoice (VAT Bill).</li>
+          <li>It is issued solely for quotation, approval, and payment estimation purposes.</li>
+          <li>This Proforma Invoice is not valid for claiming VAT input credit.</li>
+          <li>A 13% Value Added Tax (VAT) is applicable on our services.</li>
+          <li>The applicable VAT will be charged separately upon issuance of the Final Tax Invoice (VAT Bill).</li>
+        </ul>
+      </div>
+
+      <div class="pickup-note">
+        Please bring this PI to collect Passport.
       </div>
     </div>
   </div>
@@ -315,4 +367,16 @@ export const downloadInvoiceDocument = (invoice, company = {}) => {
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+};
+
+export const createInvoiceDocumentBlob = (invoice, company = {}) => {
+  const normalized = normalizeInvoice(invoice);
+  const html = createInvoiceDocumentHtml(normalized, company);
+
+  return {
+    normalized,
+    html,
+    blob: new Blob([html], { type: 'text/html;charset=utf-8' }),
+    filename: `${normalized.id || 'invoice'}.html`,
+  };
 };

@@ -4,6 +4,7 @@ import ScrollReveal, { RevealItem } from '../components/ScrollReveal';
 import AppointmentCalendar from '../components/AppointmentCalendar';
 import { serviceCatalogService } from '../services/serviceCatalogService';
 import { dbAddFeedback } from '../utils/db';
+import { VISA_FEE_NATIONALITIES } from '../data/visaFeeSchedule';
 import {
   COMPANY, TRUST_STATS, COUNTRIES, SERVICES,
   PROCESS_STEPS, WHY_CHOOSE_US, TEAM_MEMBERS, MILESTONES,
@@ -59,6 +60,48 @@ const mobileImageMap = {
 };
 
 const resolveImageForDevice = (src, isMobile) => (isMobile ? (mobileImageMap[src] || src) : src);
+const visibleNationalities = VISA_FEE_NATIONALITIES.filter((item) => item !== 'Other Countries' && item !== 'Nepal');
+const makeFlagDataUri = (svg) => `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+const nationalityFlags = {
+  Nepal: makeFlagDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 90"><rect width="120" height="90" fill="#fff"/><path d="M22 8 L22 82 L54 82 L86 54 L58 54 L86 30 L54 30 L54 8 Z" fill="#dc143c" stroke="#1e3a8a" stroke-width="6" stroke-linejoin="round"/><circle cx="52" cy="22" r="6" fill="#fff"/><path d="M52 47a9 9 0 1 0 0.1 0Z" fill="#fff"/></svg>`),
+  USA: makeFlagDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 90"><rect width="120" height="90" fill="#fff"/><g fill="#b22234"><rect width="120" height="7"/><rect y="14" width="120" height="7"/><rect y="28" width="120" height="7"/><rect y="42" width="120" height="7"/><rect y="56" width="120" height="7"/><rect y="70" width="120" height="7"/><rect y="84" width="120" height="6"/></g><rect width="52" height="38" fill="#3c3b6e"/><g fill="#fff"><circle cx="8" cy="8" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="28" cy="8" r="2"/><circle cx="38" cy="8" r="2"/><circle cx="48" cy="8" r="2"/><circle cx="13" cy="16" r="2"/><circle cx="23" cy="16" r="2"/><circle cx="33" cy="16" r="2"/><circle cx="43" cy="16" r="2"/><circle cx="8" cy="24" r="2"/><circle cx="18" cy="24" r="2"/><circle cx="28" cy="24" r="2"/><circle cx="38" cy="24" r="2"/><circle cx="48" cy="24" r="2"/><circle cx="13" cy="32" r="2"/><circle cx="23" cy="32" r="2"/><circle cx="33" cy="32" r="2"/><circle cx="43" cy="32" r="2"/></g></svg>`),
+  Canada: makeFlagDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 90"><rect width="120" height="90" fill="#fff"/><rect width="24" height="90" fill="#d62828"/><rect x="96" width="24" height="90" fill="#d62828"/><path d="M60 18l5 12 11-4-5 11 12 3-12 4 6 11-12-4-5 13-5-13-12 4 6-11-12-4 12-3-5-11 11 4z" fill="#d62828"/></svg>`),
+  Israel: makeFlagDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 90"><rect width="120" height="90" fill="#fff"/><rect y="12" width="120" height="10" fill="#1d4ed8"/><rect y="68" width="120" height="10" fill="#1d4ed8"/><path d="M60 28l10 18H50z" fill="none" stroke="#1d4ed8" stroke-width="4"/><path d="M60 62L50 44h20z" fill="none" stroke="#1d4ed8" stroke-width="4"/></svg>`),
+  Romania: makeFlagDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 90"><rect width="40" height="90" fill="#1d4ed8"/><rect x="40" width="40" height="90" fill="#facc15"/><rect x="80" width="40" height="90" fill="#dc2626"/></svg>`),
+  'Albania / Micronesia & BIH': makeFlagDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 90"><rect width="120" height="90" fill="#e11d48"/><path d="M60 24l8 10 10-4-5 10 9 7-11 1-3 11-8-7-8 7-3-11-11-1 9-7-5-10 10 4z" fill="#111827"/></svg>`),
+  Serbia: makeFlagDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 90"><rect width="120" height="30" fill="#dc2626"/><rect y="30" width="120" height="30" fill="#1d4ed8"/><rect y="60" width="120" height="30" fill="#fff"/><rect x="24" y="22" width="14" height="22" rx="2" fill="#facc15"/></svg>`),
+  Brazil: makeFlagDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 90"><rect width="120" height="90" fill="#16a34a"/><path d="M60 16l38 29-38 29L22 45z" fill="#facc15"/><circle cx="60" cy="45" r="16" fill="#1d4ed8"/><path d="M46 43c10-6 20-6 28 0" fill="none" stroke="#fff" stroke-width="3"/></svg>`),
+  Argentina: makeFlagDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 90"><rect width="120" height="30" fill="#7dd3fc"/><rect y="30" width="120" height="30" fill="#fff"/><rect y="60" width="120" height="30" fill="#7dd3fc"/><circle cx="60" cy="45" r="7" fill="#f59e0b"/></svg>`),
+  Panama: makeFlagDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 90"><rect width="60" height="45" fill="#fff"/><rect x="60" width="60" height="45" fill="#dc2626"/><rect y="45" width="60" height="45" fill="#1d4ed8"/><rect x="60" y="45" width="60" height="45" fill="#fff"/><circle cx="30" cy="22" r="7" fill="#1d4ed8"/><circle cx="90" cy="67" r="7" fill="#dc2626"/></svg>`),
+  Uruguay: makeFlagDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 90"><rect width="120" height="90" fill="#fff"/><g fill="#60a5fa"><rect y="10" width="120" height="8"/><rect y="26" width="120" height="8"/><rect y="42" width="120" height="8"/><rect y="58" width="120" height="8"/><rect y="74" width="120" height="8"/></g><circle cx="22" cy="22" r="10" fill="#f59e0b"/></svg>`),
+};
+const normalizeServiceTitle = (value = '') => String(value)
+  .normalize('NFKC')
+  .replace(/\s+/g, ' ')
+  .trim()
+  .toLowerCase();
+
+const dedupeServicesForDisplay = (items = []) => {
+  const seen = new Set();
+
+  return items.filter((item) => {
+    const key = normalizeServiceTitle(item.title) || String(item.description || '').trim().toLowerCase();
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
+const DEFAULT_SERVICE_LOOKUP = new Map(
+  SERVICES.map((service) => [normalizeServiceTitle(service.title), service])
+);
+
+const nationalityAccents = [
+  { bar: 'linear-gradient(90deg, #d8b04c 0%, #f5df9a 50%, #d8b04c 100%)', badge: 'linear-gradient(135deg, rgba(216,176,76,0.28) 0%, rgba(23,50,77,0.12) 100%)', glow: 'rgba(216,176,76,0.16)' },
+  { bar: 'linear-gradient(90deg, #6aa6d9 0%, #a8d4f2 50%, #6aa6d9 100%)', badge: 'linear-gradient(135deg, rgba(106,166,217,0.26) 0%, rgba(23,50,77,0.12) 100%)', glow: 'rgba(106,166,217,0.16)' },
+  { bar: 'linear-gradient(90deg, #6fbf9f 0%, #b9ead7 50%, #6fbf9f 100%)', badge: 'linear-gradient(135deg, rgba(111,191,159,0.24) 0%, rgba(23,50,77,0.12) 100%)', glow: 'rgba(111,191,159,0.14)' },
+  { bar: 'linear-gradient(90deg, #d98a6a 0%, #f1c3ab 50%, #d98a6a 100%)', badge: 'linear-gradient(135deg, rgba(217,138,106,0.24) 0%, rgba(23,50,77,0.12) 100%)', glow: 'rgba(217,138,106,0.14)' },
+];
 
 /* ========== Home Page ========== */
 export default function Home() {
@@ -109,6 +152,26 @@ export default function Home() {
     return () => {
       active = false;
     };
+  }, []);
+
+  useEffect(() => {
+    setServices((prev) => {
+      const current = Array.isArray(prev) ? prev : [];
+      const seenTitles = new Set(
+        current.map((item) => String(item?.title || '').trim().toLowerCase()).filter(Boolean)
+      );
+
+      const missingDefaults = SERVICES.filter((service) => {
+        const titleKey = String(service.title || '').trim().toLowerCase();
+        return titleKey && !seenTitles.has(titleKey);
+      }).map((service, index) => ({
+        id: service.id || `default-service-${index}`,
+        ...service,
+      }));
+
+      if (missingDefaults.length === 0) return current;
+      return [...current, ...missingDefaults];
+    });
   }, []);
 
   const visibleHeroImages = isMobile ? heroImages.slice(0, 2) : heroImages;
@@ -214,10 +277,142 @@ export default function Home() {
               <span className="section__label">Destinations</span>
               <h2 id="countries-title" className="section__title">Countries We Serve</h2>
               <p className="section__subtitle">
-                We provide expert visa processing services exclusively for these countries.
-                China visa application is our flagship specialty.
+                We currently process China visa applications for the following applicant nationalities.
               </p>
               <div className="gold-line"></div>
+            </div>
+          </ScrollReveal>
+
+          <ScrollReveal delay={0.08}>
+            <div
+              style={{
+                position: 'relative',
+                marginBottom: '2.25rem',
+                padding: '1.35rem',
+                borderRadius: '28px',
+                background: 'linear-gradient(135deg, rgba(18,31,52,0.96) 0%, rgba(34,46,64,0.94) 58%, rgba(49,55,58,0.92) 100%)',
+                border: '1px solid rgba(201,168,76,0.2)',
+                boxShadow: '0 24px 60px rgba(8, 15, 28, 0.26)',
+                overflow: 'hidden',
+              }}
+            >
+              <motion.div
+                aria-hidden="true"
+                animate={{ x: ['-10%', '8%', '-10%'], y: ['0%', '8%', '0%'], opacity: [0.75, 1, 0.75] }}
+                transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }}
+                style={{
+                  position: 'absolute',
+                  top: '-60px',
+                  right: '-40px',
+                  width: '180px',
+                  height: '180px',
+                  borderRadius: '999px',
+                  background: 'radial-gradient(circle, rgba(201,168,76,0.28) 0%, rgba(201,168,76,0) 72%)',
+                }}
+              />
+              <motion.div
+                aria-hidden="true"
+                animate={{ x: ['0%', '12%', '0%'], y: ['0%', '-10%', '0%'], opacity: [0.45, 0.7, 0.45] }}
+                transition={{ duration: 16, repeat: Infinity, ease: 'easeInOut' }}
+                style={{
+                  position: 'absolute',
+                  bottom: '-70px',
+                  left: '-50px',
+                  width: '220px',
+                  height: '220px',
+                  borderRadius: '999px',
+                  background: 'radial-gradient(circle, rgba(91,134,194,0.18) 0%, rgba(24,36,58,0) 72%)',
+                }}
+              />
+              <motion.div
+                aria-hidden="true"
+                animate={{ x: ['0%', '18%', '0%'] }}
+                transition={{ duration: 12, repeat: Infinity, ease: 'linear' }}
+                style={{
+                  position: 'absolute',
+                  inset: 'auto -10% 0 -10%',
+                  height: '1px',
+                  background: 'linear-gradient(90deg, transparent 0%, rgba(201,168,76,0.55) 35%, rgba(255,255,255,0.08) 50%, rgba(201,168,76,0.55) 65%, transparent 100%)',
+                }}
+              />
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem', position: 'relative', zIndex: 1 }}>
+                <div>
+                  <p style={{ margin: 0, fontSize: '0.76rem', fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#d8b04c' }}>
+                    Eligible Nationalities
+                  </p>
+                  <h3 style={{ margin: '0.35rem 0 0', fontSize: 'clamp(1.1rem, 2vw, 1.5rem)', color: '#f7f1e3', fontFamily: 'var(--font-heading)' }}>
+                    Countries Currently Supported
+                  </h3>
+                </div>
+                <div style={{ padding: '0.5rem 0.85rem', borderRadius: '999px', background: 'linear-gradient(135deg, rgba(255,255,255,0.92) 0%, rgba(244,236,216,0.95) 100%)', border: '1px solid rgba(201,168,76,0.24)', fontSize: '0.84rem', fontWeight: 700, color: '#17324d', position: 'relative', zIndex: 1, boxShadow: '0 10px 24px rgba(7, 14, 24, 0.18)' }}>
+                  {visibleNationalities.length} Nationalities
+                </div>
+              </div>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                  gap: '0.9rem',
+                  position: 'relative',
+                  zIndex: 1,
+                }}
+              >
+              {visibleNationalities.map((item, index) => (
+                (() => {
+                  const accent = nationalityAccents[index % nationalityAccents.length];
+                  return (
+                <motion.div
+                  key={item}
+                  initial={{ opacity: 0, y: 18, scale: 0.96 }}
+                  whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                  viewport={{ once: true, amount: 0.2 }}
+                  transition={{ duration: 0.42, delay: index * 0.05 }}
+                  whileHover={{ y: -7, scale: 1.03, rotate: item.length % 2 === 0 ? -0.4 : 0.4, boxShadow: '0 18px 34px rgba(7, 14, 24, 0.28)' }}
+                  style={{
+                    padding: '1rem 1rem 0.95rem',
+                    borderRadius: '20px',
+                    border: '1px solid rgba(201,168,76,0.28)',
+                    background: 'linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,243,231,0.96) 100%)',
+                    boxShadow: '0 14px 30px rgba(7, 14, 24, 0.18)',
+                    fontSize: '0.94rem',
+                    fontWeight: 700,
+                    color: '#1d2b40',
+                    textAlign: 'center',
+                    backdropFilter: 'blur(6px)',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    boxShadow: `0 14px 30px rgba(7, 14, 24, 0.18), inset 0 0 0 1px ${accent.glow}`,
+                  }}
+                >
+                  <div
+                    aria-hidden="true"
+                    style={{
+                      position: 'absolute',
+                      inset: '4px',
+                      backgroundImage: `url("${nationalityFlags[item] || ''}")`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'center',
+                      backgroundSize: 'cover',
+                      opacity: 0.42,
+                      filter: 'brightness(1.24) saturate(1.35) contrast(1.04) drop-shadow(0 10px 18px rgba(7, 14, 24, 0.04))',
+                      pointerEvents: 'none',
+                      borderRadius: '18px',
+                      mixBlendMode: 'multiply',
+                    }}
+                  />
+                  <div style={{ position: 'absolute', inset: '0 auto auto 0', width: '100%', height: '4px', background: accent.bar }} />
+                  <div style={{ position: 'absolute', right: '-18px', bottom: '-18px', width: '72px', height: '72px', borderRadius: '999px', background: `radial-gradient(circle, ${accent.glow} 0%, rgba(255,255,255,0) 72%)` }} />
+                  <div style={{ width: '42px', height: '42px', margin: '0 auto 0.7rem', borderRadius: '14px', display: 'grid', placeItems: 'center', background: accent.badge, color: '#17324d', fontSize: '0.78rem', fontWeight: 800, letterSpacing: '0.08em', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.55)', position: 'relative', zIndex: 1 }}>
+                    {item.slice(0, 2).toUpperCase()}
+                  </div>
+                  <div style={{ position: 'relative', zIndex: 1 }}>{item}</div>
+                </motion.div>
+                  );
+                })()
+              ))}
+              </div>
             </div>
           </ScrollReveal>
 
@@ -232,6 +427,7 @@ export default function Home() {
                     loading="lazy"
                     decoding="async"
                   />
+                  <div className="country-card__flag" aria-hidden="true">{country.flag}</div>
                   <div className="country-card__overlay">
                     <h3 className="country-card__name">{country.name}</h3>
                     <p className="country-card__desc">{country.description}</p>
@@ -239,6 +435,20 @@ export default function Home() {
                       {country.visaTypes.map((type) => (
                         <span key={type} className="country-card__tag">{type}</span>
                       ))}
+                    </div>
+                    <div className="country-card__nationalities">
+                      <p className="country-card__nationalities-label">Eligible Nationalities</p>
+                      <div className="country-card__nationalities-list">
+                        {(country.eligibleNationalities || []).map((nationality, index) => (
+                          <span
+                            key={`${country.id}-${nationality}`}
+                            className="country-card__nationality"
+                            style={{ '--country-delay': `${index * 90}ms` }}
+                          >
+                            {nationality}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -427,10 +637,14 @@ export default function Home() {
       </section>
 
       {/* ===== 11. DESTINATION GALLERY ===== */}
-      <section id="gallery" className="section section--alt" aria-labelledby="gallery-title">
+      <section
+        id="gallery"
+        className="section section--alt section--gallery-tight"
+        aria-labelledby="gallery-title"
+      >
         <div className="container">
           <ScrollReveal>
-            <div className="section__header">
+            <div className="section__header section__header--compact">
               <span className="section__label">Visual Journey</span>
               <h2 id="gallery-title" className="section__title">Destination Gallery</h2>
               <p className="section__subtitle">

@@ -37,29 +37,35 @@ export const COUNTRIES = [
   {
     id: 'china',
     name: 'China',
+    flag: '🇨🇳',
     description:
       'Our flagship service. We are the pioneer in China visa application services in Nepal, offering expert guidance for all visa categories.',
     visaTypes: ['Tourist (L)', 'Business (M)', 'Student (X)', 'Family (Q)', 'Transit (G)'],
     image: '/images/destinations/shanghai-generated.png',
     featured: true,
+    eligibleNationalities: ['Nepal', 'India', 'Pakistan', 'Bangladesh', 'Sri Lanka', 'Other Countries'],
   },
   {
     id: 'japan',
     name: 'Japan',
+    flag: '🇯🇵',
     description:
       'Professional visa processing services for Japan, including tourist, business, and student visas with thorough documentation support.',
     visaTypes: ['Tourist', 'Business', 'Student', 'Transit'],
     image: '/images/destinations/tokyo-generated.png',
     featured: false,
+    eligibleNationalities: ['Nepal', 'India', 'Bangladesh', 'Sri Lanka'],
   },
   {
     id: 'south-korea',
     name: 'South Korea',
+    flag: '🇰🇷',
     description:
       'Comprehensive visa application support for South Korea, ensuring accurate paperwork and timely submission for all visa categories.',
     visaTypes: ['Tourist', 'Business', 'Student', 'Working Holiday'],
     image: '/images/destinations/seoul-generated.png',
     featured: false,
+    eligibleNationalities: ['Nepal', 'India', 'Bangladesh', 'Pakistan'],
   },
 ];
 
@@ -145,6 +151,11 @@ export const SERVICES = [
     icon: 'DV',
     title: 'Document Verification',
     description: 'Professional verification and authentication of all required travel and visa documents.',
+  },
+  {
+    icon: 'TS',
+    title: 'Tailored Service',
+    description: 'Personalized visa and travel documentation support designed around each client\'s exact purpose, timeline, and paperwork needs.',
   },
 ];
 

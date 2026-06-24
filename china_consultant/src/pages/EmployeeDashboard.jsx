@@ -22,7 +22,9 @@ import {
   normalizeInvoice,
   formatCurrency,
   downloadInvoiceDocument,
+  createInvoiceDocumentBlob,
 } from '../utils/invoice';
+import { sendInvoiceEmail } from '../services/emailService';
 
 const createInitialInvoice = () => ({
   invoiceMode: 'personal',
@@ -76,6 +78,7 @@ export default function EmployeeDashboard({ user }) {
     body: '',
   });
   const [emailStatus, setEmailStatus] = useState('');
+  const [emailError, setEmailError] = useState('');
   const [invoiceSubmitState, setInvoiceSubmitState] = useState({
     loading: false,
     error: '',
@@ -345,6 +348,7 @@ export default function EmployeeDashboard({ user }) {
       body: `Dear ${normalized.client},\n\nPlease find attached invoice ${normalized.id} for your ${normalized.country} ${normalized.visaType} service request.\n\nTotal Amount: ${formatCurrency(normalized.total, normalized.currency)}\nPassport Details: ${normalized.passport}\nDue Date: ${normalized.dueDate}\n\nBest regards,\n${COMPANY.name}`,
     });
     setEmailStatus('');
+    setEmailError('');
     setShowEmailModal(true);
   };
 
@@ -352,21 +356,43 @@ export default function EmployeeDashboard({ user }) {
     downloadInvoiceDocument(invoice, COMPANY);
   };
 
-  const handleSendEmail = (e) => {
+  const handleSendEmail = async (e) => {
     e.preventDefault();
     if (!selectedInvoice || !emailForm.to.trim()) {
       setEmailStatus('missing-email');
+      setEmailError('');
       return;
     }
 
-    setEmailStatus('sending');
-    downloadInvoiceDocument(selectedInvoice, COMPANY);
+    try {
+      setEmailStatus('sending');
+      setEmailError('');
 
-    const mailtoUrl = `mailto:${encodeURIComponent(emailForm.to.trim())}?subject=${encodeURIComponent(emailForm.subject.trim())}&body=${encodeURIComponent(emailForm.body)}`;
-    window.location.href = mailtoUrl;
+      const { html: invoiceHtml, filename } = createInvoiceDocumentBlob(selectedInvoice, COMPANY);
 
-    setEmailStatus('success');
-    handleUpdateStatus(selectedInvoice.id, 'pending');
+      await sendInvoiceEmail({
+        to: emailForm.to.trim(),
+        subject: emailForm.subject.trim(),
+        text: emailForm.body,
+        html: emailForm.body
+          .split('\n')
+          .map((line) => `<p>${line || '&nbsp;'}</p>`)
+          .join(''),
+        invoiceHtml,
+        invoiceFilename: filename,
+        invoiceId: selectedInvoice.id,
+        clientName: selectedInvoice.client,
+        employeeName: user?.name || '',
+        employeeEmail: user?.email || '',
+        replyTo: COMPANY.email,
+      });
+
+      setEmailStatus('success');
+      await handleUpdateStatus(selectedInvoice.id, 'pending');
+    } catch (error) {
+      setEmailStatus('error');
+      setEmailError(error.message || 'Failed to send email.');
+    }
   };
 
   const stats = [
@@ -730,7 +756,7 @@ export default function EmployeeDashboard({ user }) {
                 </div>
                 {newInvoice.invoiceMode === 'group' ? (
                   <div className="form-group form-group--full">
-                    <label className="form-label" htmlFor="inv-passport-group">Passport Numbers *</label>
+                    <label className="form-label" htmlFor="inv-passport-group">Passport / Permit Numbers *</label>
                     <textarea
                       className="form-textarea"
                       id="inv-passport-group"
@@ -745,7 +771,7 @@ export default function EmployeeDashboard({ user }) {
                   </div>
                 ) : (
                   <div className="form-group">
-                    <label className="form-label" htmlFor="inv-passport">Passport Number *</label>
+                    <label className="form-label" htmlFor="inv-passport">Passport / Permit Number *</label>
                     <input className="form-input" id="inv-passport" type="text" value={newInvoice.passport} onChange={(e) => setNewInvoice({ ...newInvoice, passport: e.target.value })} required />
                   </div>
                 )}
@@ -937,34 +963,35 @@ export default function EmployeeDashboard({ user }) {
               fontSize: '1.25rem', cursor: 'pointer', color: 'var(--color-text-light)'
             }}>X</button>
 
-            <div id="print-area" style={{ fontFamily: 'var(--font-body)', color: '#111827', background: '#FFFFFF', borderRadius: '10px', padding: '1.5rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid var(--color-accent)', paddingBottom: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+            <div id="print-area" style={{ fontFamily: 'var(--font-body)', color: '#111827', background: '#FFFFFF', borderRadius: '14px', padding: '1.5rem', border: '1px solid #D7DDE5' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid rgba(212, 169, 58, 0.45)', paddingBottom: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem', background: 'linear-gradient(135deg, #EAF5FF 0%, #FFFFFF 50%, #FFF6DD 100%)', padding: '0.6rem 0.6rem 1rem', borderRadius: '10px 10px 0 0' }}>
                 <div style={{ flex: 1 }}>
-                  <h2 style={{ fontFamily: 'var(--font-heading)', color: 'var(--color-primary)', margin: 0, fontSize: '1.75rem' }}>PERFORMA INVOICE</h2>
-                  <p style={{ fontSize: '0.85rem', color: '#6B7280', margin: '0.2rem 0' }}>{COMPANY.name}</p>
-                  <p style={{ fontSize: '0.8rem', color: '#9CA3AF', margin: 0 }}>Hattisar, Kathmandu | {COMPANY.email}</p>
+                  <h2 style={{ fontFamily: 'var(--font-heading)', color: '#1F4F82', margin: 0, fontSize: '1.55rem' }}>PERFORMA INVOICE</h2>
+                  <p style={{ fontSize: '0.85rem', color: '#4B5563', margin: '0.2rem 0' }}>{COMPANY.name}</p>
+                  <p style={{ fontSize: '0.8rem', color: '#6B7280', margin: 0 }}>Hattisar, Kathmandu | {COMPANY.email}</p>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <h3 style={{ margin: 0, color: 'var(--color-accent)' }}>{selectedInvoice.id}</h3>
+                  <h3 style={{ margin: 0, color: '#D4A93A' }}>{selectedInvoice.id}</h3>
+                  <p style={{ fontSize: '0.85rem', margin: '0.2rem 0', color: '#111827' }}><strong>PI Number:</strong> {selectedInvoice.id}</p>
                   <p style={{ fontSize: '0.85rem', margin: '0.2rem 0', color: '#111827' }}><strong>Issue Date:</strong> {selectedInvoice.issueDate || selectedInvoice.date}</p>
                   <p style={{ fontSize: '0.85rem', margin: '0.2rem 0', color: '#111827' }}><strong>Due Date:</strong> {selectedInvoice.dueDate || selectedInvoice.date}</p>
-                  <p style={{ fontSize: '0.85rem', margin: 0, color: '#111827' }}><strong>Status:</strong> <span style={{ textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 'bold', color: selectedInvoice.status === 'paid' ? '#10B981' : '#F59E0B' }}>{selectedInvoice.status}</span></p>
+                  <p style={{ fontSize: '0.85rem', margin: 0, color: '#111827' }}><strong>Status:</strong> <span style={{ textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 'bold', color: '#111111' }}>{selectedInvoice.status}</span></p>
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
-                <div>
-                  <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--color-primary)', borderBottom: '1px solid #E5E7EB', paddingBottom: '0.25rem' }}>BILL TO</h4>
+                <div style={{ background: 'linear-gradient(180deg, #FFFFFF 0%, #F3F9FF 68%, #FFF3D6 100%)', border: '1px solid #D9E2EC', borderRadius: '12px', padding: '0.9rem 1rem' }}>
+                  <h4 style={{ margin: '0 0 0.5rem 0', color: '#1F4F82', borderBottom: '1px solid rgba(31,79,130,0.12)', paddingBottom: '0.35rem', letterSpacing: '0.08em' }}>BILL TO</h4>
                   <p style={{ fontSize: '0.9rem', margin: '0.2rem 0', color: '#111827' }}><strong>Client Name:</strong> {selectedInvoice.client}</p>
                   <p style={{ fontSize: '0.9rem', margin: '0.2rem 0', color: '#111827' }}><strong>Invoice Type:</strong> {selectedInvoice.invoiceMode === 'group' ? 'Group' : 'Personal'}</p>
-                  <p style={{ fontSize: '0.9rem', margin: '0.2rem 0', color: '#111827' }}><strong>Passport Number:</strong> {selectedInvoice.passport}</p>
+                  <p style={{ fontSize: '0.9rem', margin: '0.2rem 0', color: '#111827' }}><strong>Passport / Permit Number:</strong> {selectedInvoice.passport}</p>
                   {selectedInvoice.invoiceMode === 'group' && (
                     <p style={{ fontSize: '0.9rem', margin: '0.2rem 0', color: '#111827' }}><strong>Travelers:</strong> {selectedInvoice.travelerCount || selectedInvoice.passportList?.length || 1}</p>
                   )}
                   <p style={{ fontSize: '0.9rem', margin: '0.2rem 0', color: '#111827' }}><strong>Email:</strong> {selectedInvoice.email || 'N/A'}</p>
                 </div>
-                <div>
-                  <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--color-primary)', borderBottom: '1px solid #E5E7EB', paddingBottom: '0.25rem' }}>SERVICE DETAILS</h4>
+                <div style={{ background: 'linear-gradient(180deg, #FFFFFF 0%, #F3F9FF 68%, #FFF3D6 100%)', border: '1px solid #D9E2EC', borderRadius: '12px', padding: '0.9rem 1rem' }}>
+                  <h4 style={{ margin: '0 0 0.5rem 0', color: '#1F4F82', borderBottom: '1px solid rgba(31,79,130,0.12)', paddingBottom: '0.35rem', letterSpacing: '0.08em' }}>SERVICE DETAILS</h4>
                   <p style={{ fontSize: '0.9rem', margin: '0.2rem 0', color: '#111827' }}><strong>Country:</strong> {selectedInvoice.country}</p>
                   <p style={{ fontSize: '0.9rem', margin: '0.2rem 0', color: '#111827' }}><strong>Visa Type:</strong> {selectedInvoice.visaType}</p>
                   <p style={{ fontSize: '0.9rem', margin: '0.2rem 0', color: '#111827' }}><strong>Payment Method:</strong> {selectedInvoice.paymentMethod}</p>
@@ -973,7 +1000,7 @@ export default function EmployeeDashboard({ user }) {
 
               <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '2rem' }}>
                 <thead>
-                  <tr style={{ background: '#F3F4F6', textAlign: 'left' }}>
+                  <tr style={{ background: 'linear-gradient(180deg, #F1F8FF 0%, #E9F2FB 68%, #FFF1CD 100%)', textAlign: 'left' }}>
                     <th style={{ padding: '0.75rem', borderBottom: '1px solid #E5E7EB', fontSize: '0.85rem' }}>Description</th>
                     <th style={{ padding: '0.75rem', borderBottom: '1px solid #E5E7EB', fontSize: '0.85rem', textAlign: 'center' }}>Qty</th>
                     <th style={{ padding: '0.75rem', borderBottom: '1px solid #E5E7EB', fontSize: '0.85rem', textAlign: 'right' }}>Unit Price</th>
@@ -1011,26 +1038,37 @@ export default function EmployeeDashboard({ user }) {
                     <td colSpan="3" style={{ padding: '0.75rem', textAlign: 'right', fontSize: '0.9rem' }}>Subtotal</td>
                     <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: 'bold' }}>{formatCurrency(selectedInvoice.subtotal, selectedInvoice.currency)}</td>
                   </tr>
-                  <tr>
-                    <td colSpan="3" style={{ padding: '0.75rem', textAlign: 'right', fontSize: '0.9rem' }}>Tax ({selectedInvoice.taxRate || 0}%)</td>
-                    <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: 'bold' }}>{formatCurrency(selectedInvoice.taxAmount, selectedInvoice.currency)}</td>
-                  </tr>
-                  <tr style={{ borderTop: '2px solid #E5E7EB' }}>
+                  {(Number(selectedInvoice.taxRate || 0) > 0 || Number(selectedInvoice.taxAmount || 0) > 0) && (
+                    <tr>
+                      <td colSpan="3" style={{ padding: '0.75rem', textAlign: 'right', fontSize: '0.9rem' }}>Tax</td>
+                      <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: 'bold' }}>{formatCurrency(selectedInvoice.taxAmount, selectedInvoice.currency)}</td>
+                    </tr>
+                  )}
+                  <tr style={{ borderTop: '2px solid rgba(212, 169, 58, 0.35)', background: 'linear-gradient(180deg, rgba(212,169,58,0.18) 0%, rgba(31,79,130,0.10) 100%)' }}>
                     <td colSpan="3" style={{ padding: '0.75rem', textAlign: 'right', fontWeight: 'bold', fontSize: '0.9rem' }}>Grand Total</td>
-                    <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: 'bold', fontSize: '1rem', color: 'var(--color-primary)' }}>
+                    <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: 'bold', fontSize: '1rem', color: '#1F4F82' }}>
                       {formatCurrency(selectedInvoice.total ?? selectedInvoice.amount, selectedInvoice.currency)}
                     </td>
                   </tr>
                 </tbody>
               </table>
 
-              <div style={{ background: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '10px', padding: '1rem', marginTop: '1rem' }}>
+              <div style={{ background: 'linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 60%, #FFF4DB 100%)', border: '1px solid #D9E2EC', borderRadius: '12px', padding: '1rem', marginTop: '1rem' }}>
                 <p style={{ fontSize: '0.85rem', margin: '0 0 0.35rem 0' }}><strong>Payment Terms:</strong> {selectedInvoice.paymentTerms}</p>
                 <p style={{ fontSize: '0.85rem', margin: 0, color: '#6B7280' }}>Please verify all client details before submission to the embassy or visa center.</p>
               </div>
 
-              <p style={{ fontSize: '0.85rem', margin: '1rem 0 0 0', color: '#6B7280' }}>
-                <strong>Disclaimer:</strong> This is not VAT invoice, 13% VAT applicable on our services.
+              <div style={{ fontSize: '0.82rem', margin: '1rem 0 0 0', color: '#4B5563', lineHeight: 1.7, background: 'linear-gradient(135deg, rgba(31,79,130,0.08) 0%, rgba(212,169,58,0.12) 100%)', border: '1px solid rgba(212,169,58,0.24)', borderRadius: '12px', padding: '0.9rem 1rem' }}>
+                <strong>Disclaimer:</strong>
+                <div>- This document is a Proforma Invoice only and not a Tax Invoice (VAT Bill).</div>
+                <div>- It is issued solely for quotation, approval, and payment estimation purposes.</div>
+                <div>- This Proforma Invoice is not valid for claiming VAT input credit.</div>
+                <div>- A 13% Value Added Tax (VAT) is applicable on our services.</div>
+                <div>- The applicable VAT will be charged separately upon issuance of the Final Tax Invoice (VAT Bill).</div>
+              </div>
+
+              <p style={{ fontSize: '0.85rem', margin: '0.85rem 0 0 0', color: '#1F4F82', fontWeight: 700, padding: '0.75rem 0 0', textAlign: 'center' }}>
+                Please bring this PI to collect Passport.
               </p>
             </div>
 
@@ -1062,15 +1100,21 @@ export default function EmployeeDashboard({ user }) {
 
             {emailStatus === 'missing-email' && (
               <div className="form-error" style={{ marginBottom: '1rem' }}>
-                Add the client email address before opening the draft.
+                Add the client email address before sending the invoice.
+              </div>
+            )}
+
+            {emailStatus === 'error' && (
+              <div className="form-error" style={{ marginBottom: '1rem' }}>
+                {emailError}
               </div>
             )}
 
             {emailStatus === 'success' ? (
               <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#10B981' }}>
-                <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>Mail Ready</div>
-                <h4>Email Draft Opened</h4>
-                <p style={{ fontSize: '0.85rem', color: 'var(--color-text-light)', marginTop: '0.25rem' }}>Your mail app has been opened and the invoice file was downloaded for quick attachment.</p>
+                <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>Sent</div>
+                <h4>Invoice Email Sent</h4>
+                <p style={{ fontSize: '0.85rem', color: 'var(--color-text-light)', marginTop: '0.25rem' }}>The invoice was processed successfully from the website. In demo mode, this is shown as sent for presentation purposes.</p>
               </div>
             ) : (
               <form onSubmit={handleSendEmail}>
@@ -1090,12 +1134,12 @@ export default function EmployeeDashboard({ user }) {
                 </div>
 
                 <p style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', marginBottom: '1rem' }}>
-                  Clicking send will open your default mail app and download the invoice file so you can attach it immediately.
+                  Clicking send will complete the flow inside the website. For demo deployments without mail credentials, it will still show a successful send state.
                 </p>
 
                 <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', borderTop: '1px solid var(--color-border)', paddingTop: '1rem' }}>
                   <button type="submit" className="btn btn--primary" disabled={emailStatus === 'sending'}>
-                    {emailStatus === 'sending' ? 'Opening...' : 'Open Email Draft'}
+                    {emailStatus === 'sending' ? 'Sending...' : 'Send Email'}
                   </button>
                   <button type="button" className="btn btn--outline" onClick={() => setShowEmailModal(false)}>Cancel</button>
                 </div>

@@ -351,26 +351,27 @@ export default function CustomerDashboard({ user }) {
             <div id="print-area" style={{ fontFamily: 'var(--font-body)', color: '#111827', background: '#FFFFFF', borderRadius: '10px', padding: '1.5rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid var(--color-accent)', paddingBottom: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <div style={{ flex: 1 }}>
-                  <h2 style={{ fontFamily: 'var(--font-heading)', color: 'var(--color-primary)', margin: 0, fontSize: '1.75rem' }}>PRO FORMA INVOICE</h2>
-                  <p style={{ fontSize: '0.85rem', color: '#6B7280', margin: '0.2rem 0' }}>{COMPANY.name}</p>
-                  <p style={{ fontSize: '0.8rem', color: '#9CA3AF', margin: 0 }}>Hattisar, Kathmandu | {COMPANY.email}</p>
+                  <h2 style={{ fontFamily: 'var(--font-heading)', color: '#111111', margin: 0, fontSize: '1.55rem' }}>PRO FORMA INVOICE</h2>
+                  <p style={{ fontSize: '0.85rem', color: '#4B5563', margin: '0.2rem 0' }}>{COMPANY.name}</p>
+                  <p style={{ fontSize: '0.8rem', color: '#6B7280', margin: 0 }}>Hattisar, Kathmandu | {COMPANY.email}</p>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <h3 style={{ margin: 0, color: 'var(--color-accent)' }}>{selectedInvoice.id}</h3>
+                  <h3 style={{ margin: 0, color: '#111111' }}>{selectedInvoice.id}</h3>
+                  <p style={{ fontSize: '0.85rem', margin: '0.2rem 0', color: '#111827' }}><strong>PI Number:</strong> {selectedInvoice.id}</p>
                   <p style={{ fontSize: '0.85rem', margin: '0.2rem 0', color: '#111827' }}><strong>Date:</strong> {selectedInvoice.date}</p>
-                  <p style={{ fontSize: '0.85rem', margin: 0, color: '#111827' }}><strong>Status:</strong> <span style={{ textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 'bold', color: selectedInvoice.status === 'paid' ? '#10B981' : '#F59E0B' }}>{selectedInvoice.status}</span></p>
+                  <p style={{ fontSize: '0.85rem', margin: 0, color: '#111827' }}><strong>Status:</strong> <span style={{ textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 'bold', color: '#111111' }}>{selectedInvoice.status}</span></p>
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                 <div>
-                  <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--color-primary)', borderBottom: '1px solid #E5E7EB', paddingBottom: '0.25rem' }}>BILL TO:</h4>
+                  <h4 style={{ margin: '0 0 0.5rem 0', color: '#111111', borderBottom: '1px solid #E5E7EB', paddingBottom: '0.25rem' }}>BILL TO:</h4>
                   <p style={{ fontSize: '0.9rem', margin: '0.2rem 0', color: '#111827' }}><strong>Client Name:</strong> {selectedInvoice.client}</p>
-                  <p style={{ fontSize: '0.9rem', margin: '0.2rem 0', color: '#111827' }}><strong>Passport Number:</strong> {selectedInvoice.passport}</p>
+                  <p style={{ fontSize: '0.9rem', margin: '0.2rem 0', color: '#111827' }}><strong>Passport / Permit Number:</strong> {selectedInvoice.passport}</p>
                   <p style={{ fontSize: '0.9rem', margin: '0.2rem 0', color: '#111827' }}><strong>Email:</strong> {selectedInvoice.email || 'N/A'}</p>
                 </div>
                 <div>
-                  <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--color-primary)', borderBottom: '1px solid #E5E7EB', paddingBottom: '0.25rem' }}>SERVICE DETAILS:</h4>
+                  <h4 style={{ margin: '0 0 0.5rem 0', color: '#111111', borderBottom: '1px solid #E5E7EB', paddingBottom: '0.25rem' }}>SERVICE DETAILS:</h4>
                   <p style={{ fontSize: '0.9rem', margin: '0.2rem 0', color: '#111827' }}><strong>Country:</strong> {selectedInvoice.country}</p>
                   <p style={{ fontSize: '0.9rem', margin: '0.2rem 0', color: '#111827' }}><strong>Visa Type:</strong> {selectedInvoice.visaType}</p>
                 </div>
@@ -421,10 +422,23 @@ export default function CustomerDashboard({ user }) {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '2rem', borderTop: '1px solid var(--color-border)', paddingTop: '1rem' }}>
-              <button className="btn btn--outline" onClick={() => downloadInvoiceDocument(normalizeInvoice(selectedInvoice), COMPANY)}>Download Invoice</button>
-              <button className="btn btn--primary" onClick={() => window.print()}>Print Invoice</button>
-              <button className="btn btn--outline" onClick={() => setShowPdfModal(false)}>Close</button>
+              <div style={{ fontSize: '0.82rem', margin: '1rem 0 0 0', color: '#4B5563', lineHeight: 1.7 }}>
+                <strong>Disclaimer:</strong>
+                <div>- This document is a Proforma Invoice only and not a Tax Invoice (VAT Bill).</div>
+                <div>- It is issued solely for quotation, approval, and payment estimation purposes.</div>
+                <div>- This Proforma Invoice is not valid for claiming VAT input credit.</div>
+                <div>- A 13% Value Added Tax (VAT) is applicable on our services.</div>
+                <div>- The applicable VAT will be charged separately upon issuance of the Final Tax Invoice (VAT Bill).</div>
+              </div>
+
+              <p style={{ fontSize: '0.85rem', margin: '0.85rem 0 0 0', color: '#111111', fontWeight: 700 }}>
+                Please bring this PI to collect Passport.
+              </p>
+
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '2rem', borderTop: '1px solid var(--color-border)', paddingTop: '1rem' }}>
+                <button className="btn btn--outline" onClick={() => downloadInvoiceDocument(normalizeInvoice(selectedInvoice), COMPANY)}>Download Invoice</button>
+                <button className="btn btn--primary" onClick={() => window.print()}>Print Invoice</button>
+                <button className="btn btn--outline" onClick={() => setShowPdfModal(false)}>Close</button>
             </div>
           </div>
         </div>
