@@ -3092,3 +3092,55 @@ h1, h2, h3, h4, h5, h6 {
     align-items: flex-start;
   }
 }
+
+@media print {
+  @page {
+    size: A5 portrait;
+    margin: 10mm;
+  }
+
+  html,
+  body {
+    width: 148mm;
+    height: 210mm;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    overflow: hidden !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  #print-area,
+  #print-area * {
+    visibility: visible !important;
+  }
+
+  #print-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 8mm !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    color: #111827 !important;
+    overflow: visible !important;
+  }
+
+  #print-area table {
+    page-break-inside: avoid;
+  }
+
+  #print-area tr,
+  #print-area .summary,
+  #print-area .notes {
+    page-break-inside: avoid;
+  }
+}

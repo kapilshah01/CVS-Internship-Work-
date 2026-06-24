@@ -17,6 +17,7 @@ const AdminLogin = lazy(() => import('./admin/Login'));
 const AdminEmployees = lazy(() => import('./admin/Clients'));
 const AdminAppointments = lazy(() => import('./admin/Appointments'));
 const AdminInquiries = lazy(() => import('./admin/Inquiries'));
+const AdminFeedback = lazy(() => import('./admin/Feedback'));
 const AdminInvoices = lazy(() => import('./admin/Invoices'));
 const AdminServices = lazy(() => import('./admin/Services'));
 
@@ -95,6 +96,7 @@ function AppRoutes({ user, isDark, toggleDark, handleLogin, handleLogout }) {
             <Route path="/admin/clients" element={<Navigate to="/admin/employees" replace />} />
             <Route path="/admin/appointments" element={<AdminProtectedRoute user={user}><AdminAppointments user={user} /></AdminProtectedRoute>} />
             <Route path="/admin/inquiries" element={<AdminProtectedRoute user={user}><AdminInquiries user={user} /></AdminProtectedRoute>} />
+            <Route path="/admin/feedback" element={<AdminProtectedRoute user={user}><AdminFeedback user={user} /></AdminProtectedRoute>} />
             <Route path="/admin/invoices" element={<AdminProtectedRoute user={user}><AdminInvoices user={user} /></AdminProtectedRoute>} />
             <Route path="/admin/services" element={<AdminProtectedRoute user={user}><AdminServices user={user} /></AdminProtectedRoute>} />
             <Route path="/admin-dashboard" element={<Navigate to="/admin/dashboard" replace />} />

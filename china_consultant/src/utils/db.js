@@ -1,6 +1,7 @@
 import { isSupabaseConfigured, requireSupabase, supabase } from '../lib/supabase';
 import { appointmentService } from '../services/appointmentService';
 import { clientService } from '../services/clientService';
+import { feedbackService } from '../services/feedbackService';
 import { inquiryService } from '../services/inquiryService';
 import { invoiceService } from '../services/invoiceService';
 import { normalizeInvoice } from './invoice';
@@ -93,6 +94,18 @@ const normalizeInvoiceRow = (row) =>
     createdBy: row.created_by || null,
   });
 
+const normalizeFeedback = (row) => ({
+  id: row.id,
+  fullName: row.full_name,
+  email: row.email,
+  rating: Number(row.rating || 5),
+  message: row.message,
+  source: row.source || 'website',
+  clientId: row.client_id || null,
+  createdAt: row.created_at,
+  updatedAt: row.updated_at,
+});
+
 const createRecordId = (prefix) => {
   const stamp = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
   const random = Math.random().toString(36).slice(2, 6).toUpperCase();
@@ -111,8 +124,9 @@ async function getCurrentProfile() {
     .from('profiles')
     .select('*')
     .eq('id', session.user.id)
-    .single();
+    .maybeSingle();
   if (error) throw new Error(error.message);
+  if (!data) return null;
   const profile = data;
   return normalizeProfile(profile);
 }
@@ -123,7 +137,7 @@ async function getProfileById(id, retries = 5) {
   for (let attempt = 0; attempt < retries; attempt += 1) {
     try {
       const client = requireSupabase();
-      const { data, error } = await client.from('profiles').select('*').eq('id', id).single();
+      const { data, error } = await client.from('profiles').select('*').eq('id', id).maybeSingle();
       if (error) throw new Error(error.message);
       const profile = data;
       if (profile) {
@@ -484,5 +498,29 @@ export async function dbUpdateInquiry(id, payload) {
 
 export async function dbDeleteInquiry(id) {
   await inquiryService.delete(id);
+  return { success: true };
+}
+
+export async function dbGetFeedback(filters = {}) {
+  const data = await feedbackService.getAll(filters);
+  return data.map(normalizeFeedback);
+}
+
+export async function dbAddFeedback(feedback) {
+  const clientRecord = await ensureClientRecordSafe({
+    name: feedback.fullName,
+    email: feedback.email,
+    source: feedback.source || 'feedback',
+    notes: feedback.message || '',
+  });
+  const created = await feedbackService.create({
+    ...feedback,
+    clientId: feedback.clientId || clientRecord?.id || null,
+  });
+  return normalizeFeedback(created);
+}
+
+export async function dbDeleteFeedback(id) {
+  await feedbackService.delete(id);
   return { success: true };
 }

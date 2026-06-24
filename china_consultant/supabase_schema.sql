@@ -117,6 +117,23 @@ create trigger inquiries_touch_updated_at
 before update on public.inquiries
 for each row execute procedure public.touch_updated_at();
 
+create table if not exists public.feedback (
+  id uuid primary key default gen_random_uuid(),
+  full_name text not null,
+  email text not null,
+  rating integer not null default 5 check (rating between 1 and 5),
+  message text not null,
+  source text not null default 'website',
+  client_id uuid references public.clients(id) on delete set null,
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now())
+);
+
+drop trigger if exists feedback_touch_updated_at on public.feedback;
+create trigger feedback_touch_updated_at
+before update on public.feedback
+for each row execute procedure public.touch_updated_at();
+
 create table if not exists public.appointments (
   id text primary key,
   client_name text not null,
@@ -224,6 +241,7 @@ alter table public.profiles enable row level security;
 alter table public.clients enable row level security;
 alter table public.countries enable row level security;
 alter table public.inquiries enable row level security;
+alter table public.feedback enable row level security;
 alter table public.appointments enable row level security;
 alter table public.invoices enable row level security;
 alter table public.service_catalog enable row level security;
@@ -325,6 +343,24 @@ with check (public.is_staff());
 drop policy if exists "inquiries_delete_admin" on public.inquiries;
 create policy "inquiries_delete_admin"
 on public.inquiries
+for delete
+using (public.is_admin());
+
+drop policy if exists "feedback_select_staff" on public.feedback;
+create policy "feedback_select_staff"
+on public.feedback
+for select
+using (public.is_staff());
+
+drop policy if exists "feedback_insert_public" on public.feedback;
+create policy "feedback_insert_public"
+on public.feedback
+for insert
+with check (true);
+
+drop policy if exists "feedback_delete_admin" on public.feedback;
+create policy "feedback_delete_admin"
+on public.feedback
 for delete
 using (public.is_admin());
 

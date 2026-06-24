@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import ScrollReveal, { RevealItem } from '../components/ScrollReveal';
 import AppointmentCalendar from '../components/AppointmentCalendar';
+import { serviceCatalogService } from '../services/serviceCatalogService';
+import { dbAddFeedback } from '../utils/db';
 import {
   COMPANY, TRUST_STATS, COUNTRIES, SERVICES,
   PROCESS_STEPS, WHY_CHOOSE_US, TEAM_MEMBERS, MILESTONES,
@@ -29,7 +31,6 @@ function AnimatedCounter({ value, suffix = '' }) {
             else setCount(start);
           }, 16);
         }
-        if (!entry.isIntersecting) { started.current = false; setCount(0); }
       },
       { threshold: 0.3 }
     );
@@ -48,10 +49,25 @@ const heroImages = [
   '/images/destinations/beijing-generated.png',
 ];
 
+const mobileImageMap = {
+  '/images/destinations/shanghai-generated.png': '/images/destinations/shanghai.png',
+  '/images/destinations/great-wall-generated.png': '/images/destinations/great-wall.png',
+  '/images/destinations/beijing-generated.png': '/images/destinations/beijing.png',
+  '/images/destinations/tokyo-generated.png': '/images/destinations/tokyo.png',
+  '/images/destinations/seoul-generated.png': '/images/destinations/seoul.png',
+  '/images/destinations/mount-fuji-generated.png': '/images/destinations/mount-fuji.png',
+};
+
+const resolveImageForDevice = (src, isMobile) => (isMobile ? (mobileImageMap[src] || src) : src);
+
 /* ========== Home Page ========== */
 export default function Home() {
   const [heroIdx, setHeroIdx] = useState(0);
   const [openFaq, setOpenFaq] = useState(null);
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 640);
+  const [services, setServices] = useState(SERVICES);
+  const [feedbackForm, setFeedbackForm] = useState({ fullName: '', email: '', rating: 5, message: '' });
+  const [feedbackState, setFeedbackState] = useState({ loading: false, error: '', success: '' });
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -60,18 +76,75 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 640px)');
+    const sync = (event) => setIsMobile(event.matches);
+    setIsMobile(media.matches);
+    media.addEventListener('change', sync);
+    return () => media.removeEventListener('change', sync);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadServices = async () => {
+      try {
+        const rows = await serviceCatalogService.getAll({ active: true });
+        if (!active || !rows?.length) return;
+        setServices(rows.map((item) => ({
+          id: item.id,
+          icon: item.icon || '•',
+          title: item.title,
+          description: item.description,
+        })));
+      } catch {
+        if (active) {
+          setServices(SERVICES);
+        }
+      }
+    };
+
+    loadServices();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const visibleHeroImages = isMobile ? heroImages.slice(0, 2) : heroImages;
+  const visibleGalleryImages = isMobile ? GALLERY_IMAGES.slice(0, 4) : GALLERY_IMAGES;
+  const activeHeroIndex = heroIdx % visibleHeroImages.length;
+
+  const handleFeedbackChange = (key) => (event) => {
+    setFeedbackForm((prev) => ({ ...prev, [key]: event.target.value }));
+  };
+
+  const handleFeedbackSubmit = async (event) => {
+    event.preventDefault();
+    setFeedbackState({ loading: true, error: '', success: '' });
+    try {
+      await dbAddFeedback(feedbackForm);
+      setFeedbackForm({ fullName: '', email: '', rating: 5, message: '' });
+      setFeedbackState({ loading: false, error: '', success: 'Thank you for your feedback. We appreciate your time.' });
+    } catch (error) {
+      setFeedbackState({ loading: false, error: error.message || 'Failed to submit feedback.', success: '' });
+    }
+  };
+
   return (
     <main>
       {/* ===== 1. HERO ===== */}
       <section id="hero" className="hero" aria-label="Hero">
         <div className="hero__bg">
-          {heroImages.map((src, i) => (
+          {visibleHeroImages.map((src, i) => (
             <img
               key={src}
-              src={src}
+              src={resolveImageForDevice(src, isMobile)}
               alt=""
-              className={`hero__bg-image ${i === heroIdx ? 'hero__bg-image--active' : ''}`}
+              className={`hero__bg-image ${i === activeHeroIndex ? 'hero__bg-image--active' : ''}`}
               loading={i === 0 ? 'eager' : 'lazy'}
+              decoding="async"
+              fetchPriority={i === 0 ? 'high' : 'auto'}
             />
           ))}
           <div className="hero__overlay"></div>
@@ -153,10 +226,11 @@ export default function Home() {
               <ScrollReveal key={country.id} delay={i * 0.1}>
                 <div className={`country-card ${country.featured ? 'country-card--featured' : ''}`}>
                   <img
-                    src={country.image}
+                    src={resolveImageForDevice(country.image, isMobile)}
                     alt={`${country.name} destination`}
                     className="country-card__image"
                     loading="lazy"
+                    decoding="async"
                   />
                   <div className="country-card__overlay">
                     <h3 className="country-card__name">{country.name}</h3>
@@ -189,8 +263,8 @@ export default function Home() {
           </ScrollReveal>
 
           <div className="services-grid">
-            {SERVICES.map((service, i) => (
-              <ScrollReveal key={i} delay={i * 0.08}>
+            {services.map((service, i) => (
+              <ScrollReveal key={service.id || service.title || i} delay={i * 0.08}>
                 <div className="service-card">
                   <div className="service-card__icon">{service.icon}</div>
                   <h3 className="service-card__title">{service.title}</h3>
@@ -367,10 +441,15 @@ export default function Home() {
           </ScrollReveal>
 
           <div className="gallery-grid">
-            {GALLERY_IMAGES.map((img, i) => (
+            {visibleGalleryImages.map((img, i) => (
               <ScrollReveal key={i} delay={i * 0.06} variant="zoomIn">
                 <div className="gallery-item">
-                  <img src={img.src} alt={img.alt} loading="lazy" />
+                  <img
+                    src={resolveImageForDevice(img.src, isMobile)}
+                    alt={img.alt}
+                    loading="lazy"
+                    decoding="async"
+                  />
                   <div className="gallery-item__overlay">
                     <div>
                       <div className="gallery-item__label">{img.alt}</div>
@@ -419,6 +498,87 @@ export default function Home() {
               </ScrollReveal>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section className="section section--alt" aria-labelledby="feedback-title" style={{ paddingTop: '2.25rem', paddingBottom: '2.25rem' }}>
+        <div className="container">
+          <ScrollReveal>
+            <div className="section__header" style={{ marginBottom: '1rem' }}>
+              <span className="section__label">Feedback</span>
+              <h2 id="feedback-title" className="section__title" style={{ fontSize: 'clamp(1.6rem, 3.5vw, 2.2rem)', marginBottom: '0.45rem' }}>Share Your Experience</h2>
+              <p className="section__subtitle" style={{ maxWidth: '520px' }}>
+                Tell us how your experience was so we can keep improving our service.
+              </p>
+              <div className="gold-line"></div>
+            </div>
+          </ScrollReveal>
+
+          <ScrollReveal delay={0.1}>
+            <div className="dashboard__panel" style={{ maxWidth: '560px', margin: '0 auto', padding: '1rem 1rem 0.9rem' }}>
+              {feedbackState.error && <div className="form-error" style={{ marginBottom: '1rem' }}>{feedbackState.error}</div>}
+              {feedbackState.success && (
+                <div style={{ marginBottom: '1rem', padding: '0.85rem 1rem', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.12)', color: '#047857', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                  {feedbackState.success}
+                </div>
+              )}
+
+              <form onSubmit={handleFeedbackSubmit}>
+                <div className="form-row" style={{ gap: '0.65rem', marginBottom: '0.5rem' }}>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="feedback-name">Full Name</label>
+                    <input className="form-input" id="feedback-name" value={feedbackForm.fullName} onChange={handleFeedbackChange('fullName')} required style={{ padding: '0.55rem 0.75rem' }} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="feedback-email">Email</label>
+                    <input className="form-input" id="feedback-email" type="email" value={feedbackForm.email} onChange={handleFeedbackChange('email')} required style={{ padding: '0.55rem 0.75rem' }} />
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '0.5rem' }}>
+                  <label className="form-label" htmlFor="feedback-rating">Rating</label>
+                  <div id="feedback-rating" style={{ display: 'flex', gap: '0.3rem', alignItems: 'center', fontSize: '2rem' }}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setFeedbackForm((prev) => ({ ...prev, rating: star }))}
+                        aria-label={`Rate ${star} star${star > 1 ? 's' : ''}`}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          padding: '0.1rem',
+                          cursor: 'pointer',
+                          lineHeight: 1,
+                          fontSize: '2.4rem',
+                          color: star <= Number(feedbackForm.rating) ? '#D4AF37' : '#CBD5E1',
+                        }}
+                      >
+                        ★
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label" htmlFor="feedback-message">Feedback</label>
+                  <textarea
+                    className="form-textarea"
+                    id="feedback-message"
+                    value={feedbackForm.message}
+                    onChange={handleFeedbackChange('message')}
+                    placeholder="Share what went well or what we should improve..."
+                    style={{ minHeight: '78px', padding: '0.65rem 0.75rem' }}
+                    required
+                  ></textarea>
+                </div>
+
+                <button type="submit" className="btn btn--primary" disabled={feedbackState.loading} style={{ padding: '0.7rem 1rem' }}>
+                  {feedbackState.loading ? 'Submitting...' : 'Submit Feedback'}
+                </button>
+              </form>
+            </div>
+          </ScrollReveal>
         </div>
       </section>
 

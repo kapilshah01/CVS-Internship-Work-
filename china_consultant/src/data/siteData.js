@@ -1,5 +1,5 @@
 // ============================================
-// Site Data — China Visa Service Consultancy
+// Site Data - China Visa Service Consultancy
 // ============================================
 
 export const COMPANY = {
@@ -13,7 +13,7 @@ export const COMPANY = {
   email: 'info@chinavisaservice.com.np',
   whatsapp: '+977 985-1014899',
   address: 'Hattisar, Kathmandu',
-  officeHours: 'Sun–Fri: 10:00 AM – 5:00 PM',
+  officeHours: 'Sun-Fri: 10:00 AM - 5:00 PM',
 };
 
 export const NAV_LINKS = [
@@ -68,14 +68,14 @@ export const CITIES = [
     id: 'shanghai',
     name: 'Shanghai',
     country: 'China',
-    description: 'The Pearl of the Orient — China\'s largest city and global financial hub with stunning modern architecture.',
+    description: "The Pearl of the Orient - China's largest city and global financial hub with stunning modern architecture.",
     image: '/images/destinations/shanghai-generated.png',
   },
   {
     id: 'beijing',
     name: 'Beijing',
     country: 'China',
-    description: 'China\'s capital city, home to the Forbidden City, Tiananmen Square, and rich imperial history.',
+    description: "China's capital city, home to the Forbidden City, Tiananmen Square, and rich imperial history.",
     image: '/images/destinations/beijing-generated.png',
   },
   {
@@ -96,14 +96,14 @@ export const CITIES = [
     id: 'shenzhen',
     name: 'Shenzhen',
     country: 'China',
-    description: 'China\'s tech capital and a modern miracle of rapid urban development bordering Hong Kong.',
+    description: "China's tech capital and a modern miracle of rapid urban development bordering Hong Kong.",
     image: '/images/destinations/shenzhen.png',
   },
   {
     id: 'tokyo',
     name: 'Tokyo',
     country: 'Japan',
-    description: 'Japan\'s bustling capital blending ultramodern technology with traditional temples and gardens.',
+    description: "Japan's bustling capital blending ultramodern technology with traditional temples and gardens.",
     image: '/images/destinations/tokyo-generated.png',
   },
   {
@@ -117,32 +117,32 @@ export const CITIES = [
 
 export const SERVICES = [
   {
-    icon: '🛂',
+    icon: 'TV',
     title: 'Tourist Visa',
     description: 'Complete assistance for leisure and sightseeing visa applications with documentation support.',
   },
   {
-    icon: '💼',
+    icon: 'BZ',
     title: 'Business Visa',
     description: 'Professional visa processing for business travelers, trade delegates, and corporate representatives.',
   },
   {
-    icon: '🎓',
+    icon: 'ST',
     title: 'Student Visa',
     description: 'Comprehensive support for students seeking to study abroad with scholarship and university guidance.',
   },
   {
-    icon: '👨‍👩‍👧‍👦',
+    icon: 'FM',
     title: 'Family Reunion Visa',
     description: 'Expert assistance for family reunion and dependent visa applications with proper documentation.',
   },
   {
-    icon: '✈️',
+    icon: 'TR',
     title: 'Transit Visa',
     description: 'Quick processing for transit visa requirements for travelers passing through supported countries.',
   },
   {
-    icon: '📋',
+    icon: 'DV',
     title: 'Document Verification',
     description: 'Professional verification and authentication of all required travel and visa documents.',
   },
@@ -153,62 +153,62 @@ export const PROCESS_STEPS = [
     step: 1,
     title: 'Consultation',
     description: 'Schedule a free consultation to discuss your travel plans and visa requirements.',
-    icon: '💬',
+    icon: '01',
   },
   {
     step: 2,
     title: 'Document Collection',
     description: 'Our experts guide you through the required documents and help prepare your application.',
-    icon: '📄',
+    icon: '02',
   },
   {
     step: 3,
     title: 'Application Submission',
     description: 'We submit your completed application to the appropriate embassy or visa center.',
-    icon: '📤',
+    icon: '03',
   },
   {
     step: 4,
     title: 'Visa Processing',
     description: 'Track your application status with real-time updates from our processing team.',
-    icon: '⏳',
+    icon: '04',
   },
   {
     step: 5,
     title: 'Approval & Delivery',
     description: 'Receive your approved visa and travel with confidence knowing everything is in order.',
-    icon: '✅',
+    icon: '05',
   },
 ];
 
 export const WHY_CHOOSE_US = [
   {
-    icon: '🏆',
+    icon: 'A1',
     title: 'Pioneer in China Visa',
     description: 'The first and most trusted China visa consultancy in Nepal since 2066 B.S.',
   },
   {
-    icon: '🔄',
+    icon: 'UP',
     title: 'Updated Embassy Requirements',
     description: 'We stay current with the latest embassy regulations and visa policy changes.',
   },
   {
-    icon: '👥',
+    icon: 'TM',
     title: 'Professional Support',
     description: 'Our experienced team provides personalized guidance at every step of your application.',
   },
   {
-    icon: '🔍',
+    icon: 'TR',
     title: 'Transparent Process',
-    description: 'No hidden fees, no surprises — complete transparency in our service delivery.',
+    description: 'No hidden fees, no surprises - complete transparency in our service delivery.',
   },
   {
-    icon: '🎯',
+    icon: 'PG',
     title: 'Personalized Guidance',
     description: 'Tailored solutions based on your specific travel needs and visa requirements.',
   },
   {
-    icon: '⚡',
+    icon: 'FX',
     title: 'Fast & Efficient',
     description: 'Streamlined processes to ensure your visa application is processed as quickly as possible.',
   },
@@ -282,7 +282,7 @@ export const FAQS = [
   {
     question: 'How long does the visa processing take?',
     answer:
-      'Standard processing for a China visa takes approximately 4-5 working days after submission. Express processing (1-2 days) is available at an additional fee. Processing times may vary based on the embassy\'s workload and your specific visa category.',
+      "Standard processing for a China visa takes approximately 4-5 working days after submission. Express processing (1-2 days) is available at an additional fee. Processing times may vary based on the embassy's workload and your specific visa category.",
   },
   {
     question: 'Do you handle business visa applications?',
@@ -312,30 +312,30 @@ export const FAQS = [
   {
     question: 'What is the cost of your visa processing service?',
     answer:
-      'Our service fees vary depending on the visa type, country, and processing speed. We maintain full transparency in our pricing — contact us for a detailed fee breakdown specific to your visa category. There are no hidden charges.',
+      'Our service fees vary depending on the visa type, country, and processing speed. We maintain full transparency in our pricing - contact us for a detailed fee breakdown specific to your visa category. There are no hidden charges.',
   },
 ];
 
 export const CHATBOT_RESPONSES = {
   greeting: "Hello! I'm the China Visa Assistant. How can I help you with your visa application today?",
   default:
-    "Thank you for your question. For detailed assistance, please contact our office at our phone number or email. Our team will be happy to help you.",
+    'Thank you for your question. For detailed assistance, please contact our office at our phone number or email. Our team will be happy to help you.',
   keywords: {
-    china: "China is our primary specialty! We offer Tourist (L), Business (M), Student (X), Family (Q), and Transit (G) visa services. Would you like to know the requirements for a specific visa type?",
-    japan: "We provide comprehensive Japan visa services including Tourist, Business, Student, and Transit visas. Our team can guide you through the specific requirements.",
-    korea: "We offer South Korea visa services including Tourist, Business, Student, and Working Holiday visas. Contact us for detailed requirements.",
+    china: 'China is our primary specialty! We offer Tourist (L), Business (M), Student (X), Family (Q), and Transit (G) visa services. Would you like to know the requirements for a specific visa type?',
+    japan: 'We provide comprehensive Japan visa services including Tourist, Business, Student, and Transit visas. Our team can guide you through the specific requirements.',
+    korea: 'We offer South Korea visa services including Tourist, Business, Student, and Working Holiday visas. Contact us for detailed requirements.',
     tourist: "For a tourist visa, you'll typically need: valid passport, completed application form, passport photos, flight itinerary, hotel booking, financial proof, and travel insurance. The exact requirements vary by country.",
     business: "For a business visa, you'll need: valid passport, invitation letter from the hosting company, company registration documents, and other supporting documents. We can help prepare all required paperwork.",
     student: "For a student visa, you'll need: university admission letter, passport, financial proof, academic transcripts, and other documents. We provide complete guidance for student visa applications.",
     document: "Required documents vary by visa type and country. Generally, you'll need: valid passport, photos, application form, and supporting documents. Visit our office for a personalized document checklist.",
-    cost: "Our service fees vary by visa type and processing speed. We maintain complete transparency — contact us for a detailed fee breakdown. No hidden charges!",
-    time: "Standard processing takes 4-5 working days. Express processing (1-2 days) is available at additional cost. Processing times may vary based on the embassy workload.",
-    office: "Our office is located in Hattisar, Kathmandu. We're open Sunday through Friday, 10:00 AM to 5:00 PM. You can also reach us via WhatsApp for urgent inquiries.",
-    track: "You can track your application status by contacting our office. We also provide regular updates via phone and email.",
-    hello: "Hello! Welcome to China Visa Service Consultancy. How can I assist you today?",
-    hi: "Hi there! Welcome to China Visa Service Consultancy. How can I help you with your visa needs?",
+    cost: 'Our service fees vary by visa type and processing speed. We maintain complete transparency - contact us for a detailed fee breakdown. No hidden charges!',
+    time: 'Standard processing takes 4-5 working days. Express processing (1-2 days) is available at additional cost. Processing times may vary based on the embassy workload.',
+    office: 'Our office is located in Hattisar, Kathmandu. We are open Sunday through Friday, 10:00 AM to 5:00 PM. You can also reach us via WhatsApp for urgent inquiries.',
+    track: 'You can track your application status by contacting our office. We also provide regular updates via phone and email.',
+    hello: 'Hello! Welcome to China Visa Service Consultancy. How can I assist you today?',
+    hi: 'Hi there! Welcome to China Visa Service Consultancy. How can I help you with your visa needs?',
     thanks: "You're welcome! If you have any more questions, feel free to ask. We're here to help!",
-    help: "I can help you with information about our visa services, required documents, processing times, and more. What would you like to know?",
+    help: 'I can help you with information about our visa services, required documents, processing times, and more. What would you like to know?',
   },
 };
 

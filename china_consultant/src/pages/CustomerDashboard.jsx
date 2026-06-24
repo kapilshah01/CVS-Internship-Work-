@@ -348,7 +348,7 @@ export default function CustomerDashboard({ user }) {
               fontSize: '1.25rem', cursor: 'pointer', color: 'var(--color-text-light)'
             }}>X</button>
 
-            <div id="print-area" style={{ fontFamily: 'var(--font-body)', color: '#111827' }}>
+            <div id="print-area" style={{ fontFamily: 'var(--font-body)', color: '#111827', background: '#FFFFFF', borderRadius: '10px', padding: '1.5rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid var(--color-accent)', paddingBottom: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
                 <div style={{ flex: 1 }}>
                   <h2 style={{ fontFamily: 'var(--font-heading)', color: 'var(--color-primary)', margin: 0, fontSize: '1.75rem' }}>PRO FORMA INVOICE</h2>
@@ -357,22 +357,22 @@ export default function CustomerDashboard({ user }) {
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <h3 style={{ margin: 0, color: 'var(--color-accent)' }}>{selectedInvoice.id}</h3>
-                  <p style={{ fontSize: '0.85rem', margin: '0.2rem 0' }}><strong>Date:</strong> {selectedInvoice.date}</p>
-                  <p style={{ fontSize: '0.85rem', margin: 0 }}><strong>Status:</strong> <span style={{ textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 'bold', color: selectedInvoice.status === 'paid' ? '#10B981' : '#F59E0B' }}>{selectedInvoice.status}</span></p>
+                  <p style={{ fontSize: '0.85rem', margin: '0.2rem 0', color: '#111827' }}><strong>Date:</strong> {selectedInvoice.date}</p>
+                  <p style={{ fontSize: '0.85rem', margin: 0, color: '#111827' }}><strong>Status:</strong> <span style={{ textTransform: 'uppercase', fontSize: '0.75rem', fontWeight: 'bold', color: selectedInvoice.status === 'paid' ? '#10B981' : '#F59E0B' }}>{selectedInvoice.status}</span></p>
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                 <div>
                   <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--color-primary)', borderBottom: '1px solid #E5E7EB', paddingBottom: '0.25rem' }}>BILL TO:</h4>
-                  <p style={{ fontSize: '0.9rem', margin: '0.2rem 0' }}><strong>Client Name:</strong> {selectedInvoice.client}</p>
-                  <p style={{ fontSize: '0.9rem', margin: '0.2rem 0' }}><strong>Passport Number:</strong> {selectedInvoice.passport}</p>
-                  <p style={{ fontSize: '0.9rem', margin: '0.2rem 0' }}><strong>Email:</strong> {selectedInvoice.email || 'N/A'}</p>
+                  <p style={{ fontSize: '0.9rem', margin: '0.2rem 0', color: '#111827' }}><strong>Client Name:</strong> {selectedInvoice.client}</p>
+                  <p style={{ fontSize: '0.9rem', margin: '0.2rem 0', color: '#111827' }}><strong>Passport Number:</strong> {selectedInvoice.passport}</p>
+                  <p style={{ fontSize: '0.9rem', margin: '0.2rem 0', color: '#111827' }}><strong>Email:</strong> {selectedInvoice.email || 'N/A'}</p>
                 </div>
                 <div>
                   <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--color-primary)', borderBottom: '1px solid #E5E7EB', paddingBottom: '0.25rem' }}>SERVICE DETAILS:</h4>
-                  <p style={{ fontSize: '0.9rem', margin: '0.2rem 0' }}><strong>Country:</strong> {selectedInvoice.country}</p>
-                  <p style={{ fontSize: '0.9rem', margin: '0.2rem 0' }}><strong>Visa Type:</strong> {selectedInvoice.visaType}</p>
+                  <p style={{ fontSize: '0.9rem', margin: '0.2rem 0', color: '#111827' }}><strong>Country:</strong> {selectedInvoice.country}</p>
+                  <p style={{ fontSize: '0.9rem', margin: '0.2rem 0', color: '#111827' }}><strong>Visa Type:</strong> {selectedInvoice.visaType}</p>
                 </div>
               </div>
 

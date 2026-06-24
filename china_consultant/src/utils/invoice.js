@@ -239,7 +239,7 @@ export const createInvoiceDocumentHtml = (invoice, company = {}) => {
         <p>${escapeHtml(company.email || '')}</p>
       </div>
       <div>
-        <h2>Invoice</h2>
+        <h2>Performa Invoice</h2>
         <p><strong>ID:</strong> ${escapeHtml(normalized.id)}</p>
         <p><strong>Issue Date:</strong> ${escapeHtml(normalized.issueDate || normalized.date || '')}</p>
         <p><strong>Due Date:</strong> ${escapeHtml(normalized.dueDate || normalized.date || '')}</p>
@@ -295,7 +295,7 @@ export const createInvoiceDocumentHtml = (invoice, company = {}) => {
       </div>
 
       <div class="footer">
-        This invoice was generated for visa consultancy presentation purposes.
+        <strong>Disclaimer:</strong> This is not VAT invoice, 13% VAT applicable on our services.
       </div>
     </div>
   </div>
