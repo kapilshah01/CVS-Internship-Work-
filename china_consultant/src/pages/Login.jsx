@@ -129,6 +129,8 @@ export default function Login({ onLogin }) {
         </div>
 
         <div className="auth-card__footer">
+          <Link to="/employee/forgot-password">Forgot password?</Link>
+          <br />
           Need a staff account?{' '}
           <Link to="/register">Register here</Link>
           <br />

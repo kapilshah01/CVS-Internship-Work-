@@ -92,6 +92,8 @@ export default function AdminLogin({ onLogin }) {
         </div>
 
         <div className="auth-card__footer">
+          <Link to="/admin/forgot-password">Forgot password?</Link>
+          <br />
           Need a new admin account? <Link to="/admin/register">Register admin</Link>
           <br />
           Need employee access? <Link to="/employee/login">Open employee login</Link>

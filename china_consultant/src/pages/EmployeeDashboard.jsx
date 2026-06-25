@@ -13,6 +13,7 @@ import {
   dbUpdateInvoiceStatus,
   dbGetAppointments,
   dbUpdateAppointmentStatus,
+  dbDeleteAppointment,
   dbGetClients,
   dbGetInquiries,
 } from '../utils/db';
@@ -22,9 +23,7 @@ import {
   normalizeInvoice,
   formatCurrency,
   downloadInvoiceDocument,
-  createInvoiceDocumentBlob,
 } from '../utils/invoice';
-import { sendInvoiceEmail } from '../services/emailService';
 
 const createInitialInvoice = () => ({
   invoiceMode: 'personal',
@@ -65,6 +64,7 @@ export default function EmployeeDashboard({ user }) {
   const [inquiries, setInquiries] = useState([]);
   const [search, setSearch] = useState({ query: '', country: '', status: '', dateFrom: '', dateTo: '' });
   const [appointmentSearch, setAppointmentSearch] = useState({ query: '', status: '', date: '' });
+  const [appointmentActionState, setAppointmentActionState] = useState({ savingId: '', error: '' });
   const [clientSearch, setClientSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [newInvoice, setNewInvoice] = useState(createInitialInvoice);
@@ -78,7 +78,6 @@ export default function EmployeeDashboard({ user }) {
     body: '',
   });
   const [emailStatus, setEmailStatus] = useState('');
-  const [emailError, setEmailError] = useState('');
   const [invoiceSubmitState, setInvoiceSubmitState] = useState({
     loading: false,
     error: '',
@@ -201,8 +200,31 @@ export default function EmployeeDashboard({ user }) {
   };
 
   const handleUpdateAppointmentStatus = async (id, newStatus) => {
-    await dbUpdateAppointmentStatus(id, newStatus);
-    await reloadData();
+    setAppointmentActionState((prev) => ({ ...prev, savingId: id, error: '' }));
+    try {
+      await dbUpdateAppointmentStatus(id, newStatus);
+      await reloadData();
+      setAppointmentActionState({ savingId: '', error: '' });
+    } catch (error) {
+      setAppointmentActionState({
+        savingId: '',
+        error: error.message || 'Failed to update appointment status.',
+      });
+    }
+  };
+
+  const handleDeleteAppointment = async (id) => {
+    setAppointmentActionState({ savingId: id, error: '' });
+    try {
+      await dbDeleteAppointment(id);
+      await reloadData();
+      setAppointmentActionState({ savingId: '', error: '' });
+    } catch (error) {
+      setAppointmentActionState({
+        savingId: '',
+        error: error.message || 'Failed to remove appointment.',
+      });
+    }
   };
 
   const handleCreateInvoiceFromAppointment = (appointment) => {
@@ -348,7 +370,6 @@ export default function EmployeeDashboard({ user }) {
       body: `Dear ${normalized.client},\n\nPlease find attached invoice ${normalized.id} for your ${normalized.country} ${normalized.visaType} service request.\n\nTotal Amount: ${formatCurrency(normalized.total, normalized.currency)}\nPassport Details: ${normalized.passport}\nDue Date: ${normalized.dueDate}\n\nBest regards,\n${COMPANY.name}`,
     });
     setEmailStatus('');
-    setEmailError('');
     setShowEmailModal(true);
   };
 
@@ -356,43 +377,21 @@ export default function EmployeeDashboard({ user }) {
     downloadInvoiceDocument(invoice, COMPANY);
   };
 
-  const handleSendEmail = async (e) => {
+  const handleSendEmail = (e) => {
     e.preventDefault();
     if (!selectedInvoice || !emailForm.to.trim()) {
       setEmailStatus('missing-email');
-      setEmailError('');
       return;
     }
 
-    try {
-      setEmailStatus('sending');
-      setEmailError('');
+    setEmailStatus('sending');
+    downloadInvoiceDocument(selectedInvoice, COMPANY);
 
-      const { html: invoiceHtml, filename } = createInvoiceDocumentBlob(selectedInvoice, COMPANY);
+    const mailtoUrl = `mailto:${encodeURIComponent(emailForm.to.trim())}?subject=${encodeURIComponent(emailForm.subject.trim())}&body=${encodeURIComponent(emailForm.body)}`;
+    window.location.href = mailtoUrl;
 
-      await sendInvoiceEmail({
-        to: emailForm.to.trim(),
-        subject: emailForm.subject.trim(),
-        text: emailForm.body,
-        html: emailForm.body
-          .split('\n')
-          .map((line) => `<p>${line || '&nbsp;'}</p>`)
-          .join(''),
-        invoiceHtml,
-        invoiceFilename: filename,
-        invoiceId: selectedInvoice.id,
-        clientName: selectedInvoice.client,
-        employeeName: user?.name || '',
-        employeeEmail: user?.email || '',
-        replyTo: COMPANY.email,
-      });
-
-      setEmailStatus('success');
-      await handleUpdateStatus(selectedInvoice.id, 'pending');
-    } catch (error) {
-      setEmailStatus('error');
-      setEmailError(error.message || 'Failed to send email.');
-    }
+    setEmailStatus('success');
+    handleUpdateStatus(selectedInvoice.id, 'pending');
   };
 
   const stats = [
@@ -503,7 +502,7 @@ export default function EmployeeDashboard({ user }) {
                         <td>
                           <select
                             className="form-select"
-                            style={{ padding: '2px 8px', fontSize: '0.75rem', width: 'auto' }}
+                            style={{ padding: '2px 6px', fontSize: '0.75rem', width: '92px' }}
                             value={inv.status}
                             onChange={(e) => handleUpdateStatus(inv.id, e.target.value)}
                           >
@@ -512,11 +511,32 @@ export default function EmployeeDashboard({ user }) {
                             <option value="paid">Paid</option>
                           </select>
                         </td>
-                        <td>
-                          <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <button className="btn btn--sm btn--outline" onClick={() => openPdf(inv)} title="Preview / Print Invoice">View</button>
-                            <button className="btn btn--sm btn--outline" onClick={() => handleDownloadInvoice(inv)} title="Download Invoice">Download</button>
-                            <button className="btn btn--sm btn--outline" onClick={() => openEmail(inv)} title="Prepare Email">Email</button>
+                        <td style={{ whiteSpace: 'nowrap' }}>
+                          <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'nowrap', alignItems: 'center' }}>
+                            <button
+                              className="btn btn--sm btn--outline"
+                              style={{ padding: '0.35rem 0.6rem', fontSize: '0.72rem' }}
+                              onClick={() => openPdf(inv)}
+                              title="Preview / Print Invoice"
+                            >
+                              View
+                            </button>
+                            <button
+                              className="btn btn--sm btn--outline"
+                              style={{ padding: '0.35rem 0.6rem', fontSize: '0.72rem' }}
+                              onClick={() => handleDownloadInvoice(inv)}
+                              title="Download Invoice"
+                            >
+                              File
+                            </button>
+                            <button
+                              className="btn btn--sm btn--outline"
+                              style={{ padding: '0.35rem 0.6rem', fontSize: '0.72rem' }}
+                              onClick={() => openEmail(inv)}
+                              title="Prepare Email"
+                            >
+                              Mail
+                            </button>
                           </div>
                         </td>
                       </tr>
@@ -606,6 +626,11 @@ export default function EmployeeDashboard({ user }) {
 
         {tab === 'appointments' && !showForm && (
           <div className="dashboard__panel">
+            {appointmentActionState.error && (
+              <div className="form-error" style={{ marginBottom: '1rem' }}>
+                {appointmentActionState.error}
+              </div>
+            )}
             <div className="search-bar">
               <input
                 className="form-input"
@@ -660,27 +685,43 @@ export default function EmployeeDashboard({ user }) {
                         <td>{appt.time}</td>
                         <td>{appt.country || 'China'}</td>
                         <td>{appt.purpose || 'Consultation'}</td>
-                        <td style={{ maxWidth: '220px' }}>{appt.notes || '-'}</td>
+                        <td style={{ maxWidth: '160px' }}>{appt.notes || '-'}</td>
                         <td>
                           <select
                             className="form-select"
-                            style={{ padding: '2px 8px', fontSize: '0.75rem', width: 'auto' }}
+                            style={{ padding: '2px 6px', fontSize: '0.75rem', width: '92px' }}
                             value={appt.status}
                             onChange={(e) => handleUpdateAppointmentStatus(appt.id, e.target.value)}
+                            disabled={appointmentActionState.savingId === appt.id}
                           >
                             <option value="scheduled">Scheduled</option>
                             <option value="completed">Completed</option>
                             <option value="cancelled">Cancelled</option>
                           </select>
                         </td>
-                        <td>
-                          <button
-                            type="button"
-                            className="btn btn--sm btn--outline"
-                            onClick={() => handleCreateInvoiceFromAppointment(appt)}
-                          >
-                            Create Invoice
-                          </button>
+                        <td style={{ whiteSpace: 'nowrap' }}>
+                          <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'nowrap', alignItems: 'center' }}>
+                            <button
+                              type="button"
+                              className="btn btn--sm btn--outline"
+                              style={{ padding: '0.35rem 0.6rem', fontSize: '0.72rem' }}
+                              onClick={() => handleCreateInvoiceFromAppointment(appt)}
+                              disabled={appointmentActionState.savingId === appt.id}
+                            >
+                              Invoice
+                            </button>
+                            {appt.status === 'completed' && (
+                              <button
+                                type="button"
+                                className="btn btn--sm btn--outline"
+                                style={{ color: '#b91c1c', borderColor: '#b91c1c', padding: '0.35rem 0.6rem', fontSize: '0.72rem' }}
+                                onClick={() => handleDeleteAppointment(appt.id)}
+                                disabled={appointmentActionState.savingId === appt.id}
+                              >
+                                {appointmentActionState.savingId === appt.id ? 'Clearing...' : 'Clear'}
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -1100,21 +1141,15 @@ export default function EmployeeDashboard({ user }) {
 
             {emailStatus === 'missing-email' && (
               <div className="form-error" style={{ marginBottom: '1rem' }}>
-                Add the client email address before sending the invoice.
-              </div>
-            )}
-
-            {emailStatus === 'error' && (
-              <div className="form-error" style={{ marginBottom: '1rem' }}>
-                {emailError}
+                Add the client email address before opening the draft.
               </div>
             )}
 
             {emailStatus === 'success' ? (
               <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#10B981' }}>
-                <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>Sent</div>
-                <h4>Invoice Email Sent</h4>
-                <p style={{ fontSize: '0.85rem', color: 'var(--color-text-light)', marginTop: '0.25rem' }}>The invoice was processed successfully from the website. In demo mode, this is shown as sent for presentation purposes.</p>
+                <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>Mail Ready</div>
+                <h4>Email Draft Opened</h4>
+                <p style={{ fontSize: '0.85rem', color: 'var(--color-text-light)', marginTop: '0.25rem' }}>Your mail app has been opened and the invoice file was downloaded for quick attachment.</p>
               </div>
             ) : (
               <form onSubmit={handleSendEmail}>
@@ -1134,12 +1169,12 @@ export default function EmployeeDashboard({ user }) {
                 </div>
 
                 <p style={{ fontSize: '0.8rem', color: 'var(--color-text-light)', marginBottom: '1rem' }}>
-                  Clicking send will complete the flow inside the website. For demo deployments without mail credentials, it will still show a successful send state.
+                  Clicking send will open your default mail app and download the invoice file so you can attach it immediately.
                 </p>
 
                 <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', borderTop: '1px solid var(--color-border)', paddingTop: '1rem' }}>
                   <button type="submit" className="btn btn--primary" disabled={emailStatus === 'sending'}>
-                    {emailStatus === 'sending' ? 'Sending...' : 'Send Email'}
+                    {emailStatus === 'sending' ? 'Opening...' : 'Open Email Draft'}
                   </button>
                   <button type="button" className="btn btn--outline" onClick={() => setShowEmailModal(false)}>Cancel</button>
                 </div>

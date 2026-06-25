@@ -74,7 +74,8 @@ export const appointmentService = {
 
   async delete(id) {
     const supabase = requireSupabase();
-    const result = await supabase.from(TABLE).delete().eq('id', id).select('*').single();
-    return handleSupabaseResult(result, 'Failed to delete appointment.');
+    const result = await supabase.from(TABLE).delete().eq('id', id);
+    handleSupabaseResult(result, 'Failed to delete appointment.');
+    return { success: true };
   },
 };

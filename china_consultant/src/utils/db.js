@@ -286,10 +286,11 @@ export async function dbLoginUser(email, password, role) {
   return { success: true, user: profile };
 }
 
-export async function dbRequestAdminPasswordReset(email) {
+export async function dbRequestPasswordReset(email, role = 'employee') {
   const client = requireSupabase();
+  const redirectPath = role === 'admin' ? '/admin/reset-password' : '/employee/reset-password';
   const { error } = await client.auth.resetPasswordForEmail(email.trim(), {
-    redirectTo: `${window.location.origin}/admin/login`,
+    redirectTo: `${window.location.origin}${redirectPath}`,
   });
 
   if (error) {
@@ -297,6 +298,17 @@ export async function dbRequestAdminPasswordReset(email) {
   }
 
   return { success: true, message: 'Password reset email sent. Please check your inbox.' };
+}
+
+export async function dbUpdatePassword(password) {
+  const client = requireSupabase();
+  const { error } = await client.auth.updateUser({ password });
+
+  if (error) {
+    return { success: false, message: error.message };
+  }
+
+  return { success: true, message: 'Password updated successfully. You can sign in with your new password.' };
 }
 
 export async function dbResendVerificationEmail(email) {

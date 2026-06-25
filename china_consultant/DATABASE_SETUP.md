@@ -58,7 +58,7 @@ Then approve them from the admin dashboard or directly in Supabase `profiles`.
 - Employee:
   - Can log in after admin approval
   - Can view users, appointments, and invoices
-  - Can create invoices and update appointment/invoice status
+  - Can create invoices, update appointment/invoice status, and clear completed appointments
 - Admin:
   - Can log in after admin approval
   - Can approve or reject users
@@ -78,6 +78,16 @@ Useful queries:
 select * from public.profiles order by created_at desc;
 select * from public.appointments order by created_at desc;
 select * from public.invoices order by created_at desc;
+```
+
+If employees should be allowed to clear only completed appointments, run this once in `SQL Editor`:
+
+```sql
+drop policy if exists "appointments_delete_completed_staff" on public.appointments;
+create policy "appointments_delete_completed_staff"
+on public.appointments
+for delete
+using (public.is_staff() and status = 'completed');
 ```
 
 If invoice creation fails with `stack depth limit exceeded`, run this once in `SQL Editor`:

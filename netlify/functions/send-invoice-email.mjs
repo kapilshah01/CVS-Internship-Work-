@@ -1,4 +1,4 @@
-import { processInvoiceEmailRequest } from '../../email/sendInvoiceEmail.mjs';
+import { processInvoiceEmailRequest } from '../../china_consultant/sendInvoiceEmail.mjs';
 
 export async function handler(event) {
   if (event.httpMethod === 'OPTIONS') {

@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite';
-import { processInvoiceEmailRequest } from '../email/sendInvoiceEmail.mjs';
+import { processInvoiceEmailRequest } from './sendInvoiceEmail.mjs';
 
 export default defineConfig({
   base: '/',

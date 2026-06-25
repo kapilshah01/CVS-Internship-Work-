@@ -10,10 +10,14 @@ import AdminProtectedRoute from './admin/ProtectedRoute';
 /* Lazy load pages for code splitting */
 const Home = lazy(() => import('./pages/Home'));
 const EmployeeLogin = lazy(() => import('./pages/Login'));
+const EmployeeForgotPassword = lazy(() => import('./pages/PasswordResetRequest'));
+const EmployeeResetPassword = lazy(() => import('./pages/ResetPassword'));
 const StaffRegister = lazy(() => import('./pages/Register'));
 const EmployeeDashboard = lazy(() => import('./pages/EmployeeDashboard'));
 const AdminDashboard = lazy(() => import('./admin/Dashboard'));
 const AdminLogin = lazy(() => import('./admin/Login'));
+const PasswordResetRequest = lazy(() => import('./pages/PasswordResetRequest'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const AdminEmployees = lazy(() => import('./admin/Clients'));
 const AdminAppointments = lazy(() => import('./admin/Appointments'));
 const AdminInquiries = lazy(() => import('./admin/Inquiries'));
@@ -72,6 +76,14 @@ function AppRoutes({ user, isDark, toggleDark, handleLogin, handleLogout }) {
           <Routes>
             <Route path="/" element={<><Home /><Footer /></>} />
             <Route path="/employee/login" element={<EmployeeLogin onLogin={handleLogin} />} />
+            <Route
+              path="/employee/forgot-password"
+              element={<EmployeeForgotPassword />}
+            />
+            <Route
+              path="/employee/reset-password"
+              element={<EmployeeResetPassword />}
+            />
             <Route path="/register" element={<StaffRegister />} />
             <Route path="/employee/register" element={<StaffRegister initialRole="employee" />} />
             <Route
@@ -83,6 +95,28 @@ function AppRoutes({ user, isDark, toggleDark, handleLogin, handleLogout }) {
               }
             />
             <Route path="/admin/login" element={<AdminLogin onLogin={handleLogin} />} />
+            <Route
+              path="/admin/forgot-password"
+              element={
+                <PasswordResetRequest
+                  role="admin"
+                  loginPath="/admin/login"
+                  registerPath="/admin/register"
+                  title="Reset Admin Password"
+                  subtitle="Enter your admin email and we will send a secure reset link."
+                />
+              }
+            />
+            <Route
+              path="/admin/reset-password"
+              element={
+                <ResetPassword
+                  loginPath="/admin/login"
+                  title="Set a New Admin Password"
+                  subtitle="Choose a new password for your admin account."
+                />
+              }
+            />
             <Route path="/admin/register" element={<StaffRegister initialRole="admin" />} />
             <Route
               path="/admin/dashboard"

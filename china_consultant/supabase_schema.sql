@@ -389,6 +389,12 @@ on public.appointments
 for delete
 using (public.is_admin());
 
+drop policy if exists "appointments_delete_completed_staff" on public.appointments;
+create policy "appointments_delete_completed_staff"
+on public.appointments
+for delete
+using (public.is_staff() and status = 'completed');
+
 drop policy if exists "invoices_select_staff" on public.invoices;
 create policy "invoices_select_staff"
 on public.invoices
